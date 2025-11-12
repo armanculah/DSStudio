@@ -20,7 +20,7 @@ backend/.env
 *.pyo
 *.pyd
 
-
+.ruff_cache/
 
 
 # OS
