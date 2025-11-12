@@ -1,40 +1,57 @@
-import './style.css'
+import "./style.css";
 
-console.log("Login page loaded");
+const API_BASE = "http://127.0.0.1:8000/api/v1";
 
-// Basic form handling (placeholder for future API integration)
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('loginForm');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  const messageDiv = document.getElementById('loginMsg');
-  
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      // Clear previous messages
-      messageDiv.textContent = '';
-      messageDiv.className = 'text-sm text-red-600';
-      
-      // Basic validation
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      
-      if (!email || !password) {
-        messageDiv.textContent = 'Please fill in all fields.';
+function setMessage(el, text, isError = true) {
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.remove("text-red-600", "text-green-600");
+  el.classList.add(isError ? "text-red-600" : "text-green-600");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("loginForm");
+  const msg = document.getElementById("loginMsg");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  if (!form) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMessage(msg, "");
+
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+
+    if (!email || !password) {
+      setMessage(msg, "Please enter email and password.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // <- send / receive cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const detail = data.detail || data.error || "Login failed.";
+        setMessage(msg, detail, true);
         return;
       }
-      
-      // Placeholder for API call
-      messageDiv.className = 'text-sm text-blue-600';
-      messageDiv.textContent = 'Signing in... (API integration pending)';
-      
-      // TODO: Implement actual login API call
+
+      setMessage(msg, "Login successful, redirecting…", false);
       setTimeout(() => {
-        messageDiv.className = 'text-sm text-green-600';
-        messageDiv.textContent = 'Login successful! (Demo mode)';
-      }, 1000);
-    });
-  }
+        window.location.href = "./playground.html";
+      }, 600);
+    } catch (err) {
+      console.error(err);
+      setMessage(msg, "Could not reach server. Is the backend running?");
+    }
+  });
 });

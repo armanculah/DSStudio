@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from sqlmodel import Session, create_engine
 
 from .core.config import settings
@@ -18,7 +16,7 @@ def init_db() -> None:
         conn.exec_driver_sql("SELECT 1")
 
 
-@contextmanager
 def get_session():
+    """FastAPI dependency that yields a DB session."""
     with Session(engine) as session:
         yield session

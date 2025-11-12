@@ -12,7 +12,7 @@ class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True, max_length=255)
     hashed_password: str = Field(max_length=255)
-    created_at: datetime | None = None  # DB default
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class SavedVisualization(SQLModel, table=True):

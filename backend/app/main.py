@@ -14,10 +14,10 @@ app = FastAPI(
     openapi_url=f"/api/{API_VERSION}/openapi.json",
 )
 
-# CORS: explicit methods/headers; origins from .env
+# CORS (frontend at localhost:5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
@@ -26,10 +26,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
-    # Connectivity check only; tables managed outside code.
+    # Only pings DB; no DDL.
     init_db()
 
 
+# All API endpoints live under /api/v1
 api = APIRouter(prefix=f"/api/{API_VERSION}")
 
 
@@ -43,7 +44,10 @@ def health_db() -> dict:
     return {"db": "ok"}
 
 
-# JSON error shape
+# Auth routes: /api/v1/auth/...
+api.include_router(auth.router)
+
+
 @app.exception_handler(HTTPException)
 def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -54,10 +58,10 @@ def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 def unhandled_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal Server Error"},
+    )
 
-
-# Routers under /api/v1
-api.include_router(auth.router)
 
 app.include_router(api)

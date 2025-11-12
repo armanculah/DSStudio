@@ -1,45 +1,64 @@
-import './style.css'
+import "./style.css";
 
-console.log("Signup page loaded");
+const API_BASE = "http://127.0.0.1:8000/api/v1";
 
-// Basic form handling (placeholder for future API integration)
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('signupForm');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  const messageDiv = document.getElementById('signupMsg');
-  
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      // Clear previous messages
-      messageDiv.textContent = '';
-      messageDiv.className = 'text-sm text-red-600';
-      
-      // Basic validation
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      
-      if (!email || !password) {
-        messageDiv.textContent = 'Please fill in all fields.';
+function setMessage(el, text, isError = true) {
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.remove("text-red-600", "text-green-600");
+  el.classList.add(isError ? "text-red-600" : "text-green-600");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("signupForm");
+  const msg = document.getElementById("signupMsg");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  if (!form) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setMessage(msg, "");
+
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+
+    if (!email || !password) {
+      setMessage(msg, "Please enter email and password.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setMessage(msg, "Password must be at least 8 characters.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const detail =
+          data.detail ||
+          data.error ||
+          "Sign up failed. Maybe that email is already registered?";
+        setMessage(msg, detail, true);
         return;
       }
-      
-      if (password.length < 8) {
-        messageDiv.textContent = 'Password must be at least 8 characters long.';
-        return;
-      }
-      
-      // Placeholder for API call
-      messageDiv.className = 'text-sm text-blue-600';
-      messageDiv.textContent = 'Creating account... (API integration pending)';
-      
-      // TODO: Implement actual signup API call
+
+      setMessage(msg, "Account created! Redirecting to login…", false);
       setTimeout(() => {
-        messageDiv.className = 'text-sm text-green-600';
-        messageDiv.textContent = 'Account created successfully! (Demo mode)';
-      }, 1000);
-    });
-  }
+        window.location.href = "./login.html";
+      }, 800);
+    } catch (err) {
+      console.error(err);
+      setMessage(msg, "Could not reach server. Is the backend running?");
+    }
+  });
 });

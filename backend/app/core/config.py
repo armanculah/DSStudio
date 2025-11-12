@@ -2,20 +2,20 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # App
     APP_NAME: str = "DS Studio API"
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    # MySQL (only connect; schema managed in DBeaver)
+    # MySQL
     MYSQL_USER: str
     MYSQL_PASSWORD: str
     MYSQL_HOST: str = "127.0.0.1"
     MYSQL_PORT: int = 3306
     MYSQL_DB: str
 
-    # CORS origins from .env as a comma-separated string, result is this: "http://localhost:5173,https://example.com"
+    # CORS origins as a single comma-separated string in .env
+    # Example: "http://localhost:5173,https://my-prod-site.com"
     CORS_ORIGINS_RAW: str = "http://localhost:5173"
 
     @property
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         )
 
     @property
-    def cors_origins(self) -> list[str]:
+    def CORS_ORIGINS(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS_RAW.split(",") if o.strip()]
 
     class Config:
