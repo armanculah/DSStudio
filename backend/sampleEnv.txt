@@ -1,0 +1,10 @@
+APP_NAME=DS Studio API
+SECRET_KEY=change_me_in_prod
+
+MYSQL_USER=root
+MYSQL_PASSWORD=changeme
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DB=DSStudio
+
+CORS_ORIGINS_RAW=http://localhost:5173
