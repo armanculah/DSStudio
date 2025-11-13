@@ -1,6 +1,8 @@
+// frontend/src/login.js
 import "./style.css";
 
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+const API_BASE = "http://localhost:8000/api/v1";
+
 
 function setMessage(el, text, isError = true) {
   if (!el) return;
@@ -33,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // <- send / receive cookies
+        credentials: "include", // send/receive auth cookie
         body: JSON.stringify({ email, password }),
       });
 
