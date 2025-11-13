@@ -1,116 +1,190 @@
-import './style.css'
+// frontend/src/playground.js
+import "./style.css";
+import { Stack } from "./algorithms/structures/stack.js";
+import { createStackVisualizer } from "./visualizers/structures/stackVisualizer.js";
 
 console.log("Playground page loaded");
 
-// Playground functionality
-document.addEventListener('DOMContentLoaded', () => {
-  const dataInput = document.getElementById('dataInput');
-  const insertBtn = document.getElementById('insertBtn');
-  const removeBtn = document.getElementById('removeBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const autoplayBtn = document.getElementById('autoplayBtn');
-  const speedSlider = document.getElementById('speedSlider');
-  const speedValue = document.getElementById('speedValue');
-  const algorithmSelect = document.getElementById('algorithmSelect');
-  const statusDiv = document.getElementById('status');
-  const svg = document.getElementById('vis');
-  
-  // State management
-  let currentData = [];
+document.addEventListener("DOMContentLoaded", () => {
+  const dataInput = document.getElementById("dataInput");
+  const insertBtn = document.getElementById("insertBtn");
+  const removeBtn = document.getElementById("removeBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const autoplayBtn = document.getElementById("autoplayBtn");
+  const speedSlider = document.getElementById("speedSlider");
+  const speedValue = document.getElementById("speedValue");
+  const algorithmSelect = document.getElementById("algorithmSelect");
+  const statusDiv = document.getElementById("status");
+  const svg = document.getElementById("vis");
+
+  // ---------- STATE ----------
+  const stack = new Stack();
+  let currentStructure = "stack"; // for future: array/queue/etc
   let isAutoPlaying = false;
   let animationSpeed = 50;
-  
-  // Update status message
-  const updateStatus = (message, type = 'info') => {
-    if (statusDiv) {
-      const statusContent = statusDiv.querySelector('div');
-      if (statusContent) {
-        statusContent.textContent = message;
-        statusContent.className = `text-sm ${
-          type === 'error' ? 'text-red-600' : 
-          type === 'success' ? 'text-green-600' : 
-          'text-gray-600'
-        }`;
-      }
+
+  const stackViz = createStackVisualizer(svg);
+
+  // ---------- STATUS ----------
+  const updateStatus = (message, type = "info") => {
+    if (!statusDiv) return;
+    const statusContent = statusDiv.querySelector("div");
+    if (!statusContent) return;
+
+    statusContent.textContent = message;
+    statusContent.className = `text-sm ${
+      type === "error"
+        ? "text-red-600"
+        : type === "success"
+        ? "text-green-600"
+        : "text-gray-600"
+    }`;
+  };
+
+  // ---------- RENDER DISPATCH ----------
+  const render = () => {
+    if (currentStructure === "stack") {
+      stackViz.render(stack.toArray());
+    } else {
+      // placeholder for not-yet-implemented structures
+      stackViz.reset();
+      updateStatus(
+        `Visualization for "${currentStructure.toUpperCase()}" is not implemented yet.`,
+        "error",
+      );
     }
   };
-  
-  // Speed slider handler
+
+  // ---------- UI LABELS ----------
+  const refreshLabels = () => {
+    const label = document.querySelector("label[for='dataInput']");
+    if (!label || !insertBtn || !removeBtn) return;
+
+    if (currentStructure === "stack") {
+      label.textContent = "Push value";
+      insertBtn.textContent = "Push";
+      removeBtn.textContent = "Pop";
+    } else {
+      label.textContent = "Add value";
+      insertBtn.textContent = "Insert";
+      removeBtn.textContent = "Remove";
+    }
+  };
+
+  // ---------- CONTROLS ----------
+
+  // Speed slider
   if (speedSlider && speedValue) {
-    speedSlider.addEventListener('input', (e) => {
-      animationSpeed = parseInt(e.target.value);
+    speedSlider.addEventListener("input", (e) => {
+      animationSpeed = parseInt(e.target.value, 10);
       speedValue.textContent = animationSpeed;
       updateStatus(`Animation speed set to ${animationSpeed}%`);
     });
   }
-  
-  // Insert button handler
+
+  // PUSH
   if (insertBtn && dataInput) {
-    insertBtn.addEventListener('click', () => {
+    insertBtn.addEventListener("click", () => {
       const value = dataInput.value.trim();
-      if (value) {
-        currentData.push(value);
-        dataInput.value = '';
-        updateStatus(`Added "${value}" to data structure`, 'success');
-        // TODO: Update visualization
-      } else {
-        updateStatus('Please enter a value to insert', 'error');
+      if (!value) {
+        updateStatus("Please enter a value first.", "error");
+        return;
       }
+
+      if (currentStructure === "stack") {
+        stack.push(value);
+        updateStatus(`PUSH "${value}" onto stack`, "success");
+      } else {
+        // later: other data structures
+        updateStatus(
+          `Insert operation not implemented for ${currentStructure}.`,
+          "error",
+        );
+      }
+
+      dataInput.value = "";
+      render();
     });
-    
-    // Allow Enter key to insert
-    dataInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+
+    dataInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
         insertBtn.click();
       }
     });
   }
-  
-  // Remove button handler
+
+  // POP
   if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      if (currentData.length > 0) {
-        const removed = currentData.pop();
-        updateStatus(`Removed "${removed}" from data structure`, 'success');
-        // TODO: Update visualization
+    removeBtn.addEventListener("click", () => {
+      if (currentStructure === "stack") {
+        if (stack.isEmpty) {
+          updateStatus("Stack is already empty", "error");
+          return;
+        }
+        const removed = stack.pop();
+        updateStatus(`POP "${removed}" from stack`, "success");
+        render();
       } else {
-        updateStatus('No data to remove', 'error');
+        updateStatus(
+          `Remove operation not implemented for ${currentStructure}.`,
+          "error",
+        );
       }
     });
   }
-  
-  // Clear button handler
+
+  // CLEAR
   if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      currentData = [];
-      updateStatus('Data structure cleared', 'success');
-      // TODO: Clear visualization
+    clearBtn.addEventListener("click", () => {
+      if (currentStructure === "stack") {
+        stack.clear();
+        stackViz.reset();
+        updateStatus("Stack cleared", "success");
+      } else {
+        updateStatus(
+          `Clear operation not implemented for ${currentStructure}.`,
+          "error",
+        );
+      }
     });
   }
-  
-  // Auto-play button handler
+
+  // Auto-play (still just UI)
   if (autoplayBtn) {
-    autoplayBtn.addEventListener('click', () => {
+    autoplayBtn.addEventListener("click", () => {
       isAutoPlaying = !isAutoPlaying;
-      autoplayBtn.textContent = isAutoPlaying ? 'Stop Auto-play' : 'Auto-play';
-      autoplayBtn.className = isAutoPlaying ? 
-        'w-full ds-btn ds-btn-primary' : 
-        'w-full ds-btn ds-btn-outline';
-      
-      updateStatus(isAutoPlaying ? 'Auto-play started' : 'Auto-play stopped');
-      // TODO: Implement auto-play logic
+      autoplayBtn.textContent = isAutoPlaying ? "Stop Auto-play" : "Auto-play";
+      autoplayBtn.className = isAutoPlaying
+        ? "w-full ds-btn ds-btn-primary"
+        : "w-full ds-btn ds-btn-outline";
+
+      updateStatus(
+        isAutoPlaying
+          ? "Auto-play started (not wired yet)"
+          : "Auto-play stopped",
+      );
     });
   }
-  
-  // Algorithm selection handler
+
+  // Data structure selector
   if (algorithmSelect) {
-    algorithmSelect.addEventListener('change', (e) => {
-      const algorithm = e.target.value;
-      updateStatus(`Switched to ${algorithm.toUpperCase()} visualization`);
-      // TODO: Switch visualization type
+    algorithmSelect.addEventListener("change", (e) => {
+      currentStructure = e.target.value;
+      refreshLabels();
+      updateStatus(
+        `Switched to ${currentStructure.toUpperCase()} visualization`,
+      );
+      render();
     });
+
+    // default to stack since it’s the only implemented one
+    algorithmSelect.value = "stack";
   }
-  
-  // Initialize
-  updateStatus('Playground ready. Select a data structure and start adding values!');
+
+  // ---------- INIT ----------
+  refreshLabels();
+  updateStatus(
+    "Playground ready. Using STACK visualization. Push values to see them appear.",
+  );
+  render();
 });
