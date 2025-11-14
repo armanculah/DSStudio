@@ -1,7 +1,9 @@
 // frontend/src/playground.js
 import "./style.css";
 import { Stack } from "./algorithms/structures/stack.js";
+import { LinkedList } from "./algorithms/structures/linkedList.js";
 import { createStackVisualizer } from "./visualizers/structures/stackVisualizer.js";
+import { createLinkedListVisualizer } from "./visualizers/structures/linkedListVisualizer.js";
 
 console.log("Playground page loaded");
 
@@ -19,11 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---------- STATE ----------
   const stack = new Stack();
-  let currentStructure = "stack"; // for future: array/queue/etc
+  const list = new LinkedList();
+
+  let currentStructure = "stack"; // "stack" | "linkedlist" | etc.
   let isAutoPlaying = false;
   let animationSpeed = 50;
 
   const stackViz = createStackVisualizer(svg);
+  const listViz = createLinkedListVisualizer(svg);
 
   // ---------- STATUS ----------
   const updateStatus = (message, type = "info") => {
@@ -45,8 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const render = () => {
     if (currentStructure === "stack") {
       stackViz.render(stack.toArray());
+    } else if (currentStructure === "linkedlist") {
+      listViz.render(list.toArray());
     } else {
-      // placeholder for not-yet-implemented structures
+      // fallback – you can create separate visualizers for others later
       stackViz.reset();
       updateStatus(
         `Visualization for "${currentStructure.toUpperCase()}" is not implemented yet.`,
@@ -64,6 +71,10 @@ document.addEventListener("DOMContentLoaded", () => {
       label.textContent = "Push value";
       insertBtn.textContent = "Push";
       removeBtn.textContent = "Pop";
+    } else if (currentStructure === "linkedlist") {
+      label.textContent = "Insert value (at tail)";
+      insertBtn.textContent = "Insert";
+      removeBtn.textContent = "Remove head";
     } else {
       label.textContent = "Add value";
       insertBtn.textContent = "Insert";
@@ -82,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // PUSH
+  // INSERT
   if (insertBtn && dataInput) {
     insertBtn.addEventListener("click", () => {
       const value = dataInput.value.trim();
@@ -94,8 +105,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentStructure === "stack") {
         stack.push(value);
         updateStatus(`PUSH "${value}" onto stack`, "success");
+      } else if (currentStructure === "linkedlist") {
+        list.append(value);
+        updateStatus(
+          `Inserted "${value}" at tail of linked list`,
+          "success",
+        );
       } else {
-        // later: other data structures
         updateStatus(
           `Insert operation not implemented for ${currentStructure}.`,
           "error",
@@ -113,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // POP
+  // REMOVE
   if (removeBtn) {
     removeBtn.addEventListener("click", () => {
       if (currentStructure === "stack") {
@@ -123,6 +139,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const removed = stack.pop();
         updateStatus(`POP "${removed}" from stack`, "success");
+        render();
+      } else if (currentStructure === "linkedlist") {
+        if (list.isEmpty) {
+          updateStatus("List is already empty", "error");
+          return;
+        }
+        const removed = list.removeHead();
+        updateStatus(
+          `Removed head "${removed}" from linked list`,
+          "success",
+        );
         render();
       } else {
         updateStatus(
@@ -140,6 +167,10 @@ document.addEventListener("DOMContentLoaded", () => {
         stack.clear();
         stackViz.reset();
         updateStatus("Stack cleared", "success");
+      } else if (currentStructure === "linkedlist") {
+        list.clear();
+        listViz.reset();
+        updateStatus("Linked list cleared", "success");
       } else {
         updateStatus(
           `Clear operation not implemented for ${currentStructure}.`,
@@ -169,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Data structure selector
   if (algorithmSelect) {
     algorithmSelect.addEventListener("change", (e) => {
-      currentStructure = e.target.value;
+      currentStructure = e.target.value; // "array", "stack", "queue", "linkedlist", "bst"
       refreshLabels();
       updateStatus(
         `Switched to ${currentStructure.toUpperCase()} visualization`,
@@ -177,14 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
     });
 
-    // default to stack since it’s the only implemented one
+    // default to stack
     algorithmSelect.value = "stack";
   }
 
   // ---------- INIT ----------
   refreshLabels();
   updateStatus(
-    "Playground ready. Using STACK visualization. Push values to see them appear.",
+    "Playground ready. Using STACK visualization. Push or insert values to see them appear.",
   );
   render();
 });
