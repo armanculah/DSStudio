@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -6,6 +8,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    MEDIA_ROOT: str = "media"
+    PROFILE_PICTURE_DIR: str = "profile_pictures"
+    MEDIA_URL: str = "/media"
 
     # MySQL
     MYSQL_USER: str
@@ -28,6 +33,23 @@ class Settings(BaseSettings):
     @property
     def CORS_ORIGINS(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS_RAW.split(",") if o.strip()]
+
+    @property
+    def BASE_DIR(self) -> Path:
+        return Path(__file__).resolve().parent.parent
+
+    @property
+    def MEDIA_ROOT_PATH(self) -> Path:
+        return (self.BASE_DIR / self.MEDIA_ROOT).resolve()
+
+    @property
+    def PROFILE_PICTURE_PATH(self) -> Path:
+        return (self.MEDIA_ROOT_PATH / self.PROFILE_PICTURE_DIR).resolve()
+
+    @property
+    def PROFILE_PICTURE_URL(self) -> str:
+        base = self.MEDIA_URL.rstrip("/")
+        return f"{base}/{self.PROFILE_PICTURE_DIR}".rstrip("/")
 
     class Config:
         env_file = ".env"

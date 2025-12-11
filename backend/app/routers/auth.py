@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session, select
 
+from ..core.constants import AUTH_COOKIE_NAME
 from ..core.security import (
     create_access_token,
     decode_token,
@@ -10,9 +11,9 @@ from ..core.security import (
 from ..db import get_session
 from ..models import User
 from ..schemas import UserCreate, UserLogin, UserOut
+from ..utils.user_serializers import serialize_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-COOKIE_NAME = "access_token"
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
@@ -21,11 +22,17 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     if exists:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    user = User(email=payload.email, hashed_password=hash_password(payload.password))
+    user = User(
+        name=payload.name,
+        surname=payload.surname,
+        email=payload.email,
+        profile_picture=payload.profile_picture,
+        hashed_password=hash_password(payload.password),
+    )
     session.add(user)
     session.commit()
     session.refresh(user)
-    return user
+    return serialize_user(user)
 
 
 @router.post("/login")
@@ -40,7 +47,7 @@ def login(
 
     token = create_access_token({"sub": str(user.id)})
     response.set_cookie(
-        key=COOKIE_NAME,
+        key=AUTH_COOKIE_NAME,
         value=token,
         httponly=True,
         samesite="lax",
@@ -53,13 +60,13 @@ def login(
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie(COOKIE_NAME, path="/")
+    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
     return {"message": "logged out"}
 
 
 @router.get("/me", response_model=UserOut)
 def me(request: Request, session: Session = Depends(get_session)):
-    token = request.cookies.get(COOKIE_NAME)
+    token = request.cookies.get(AUTH_COOKIE_NAME)
     data = decode_token(token) if token else None
     if not data or "sub" not in data:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -68,4 +75,4 @@ def me(request: Request, session: Session = Depends(get_session)):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    return user
+    return serialize_user(user)

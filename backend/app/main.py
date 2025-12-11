@@ -1,10 +1,11 @@
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
 from .db import init_db
-from .routers import auth
+from .routers import auth, profile
 
 API_VERSION = "v1"
 
@@ -46,6 +47,7 @@ def health_db() -> dict:
 
 # Auth routes: /api/v1/auth/...
 api.include_router(auth.router)
+api.include_router(profile.router)
 
 
 @app.exception_handler(HTTPException)
@@ -65,3 +67,9 @@ def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(api)
+
+app.mount(
+    settings.MEDIA_URL,
+    StaticFiles(directory=str(settings.MEDIA_ROOT_PATH), check_dir=False),
+    name="media",
+)

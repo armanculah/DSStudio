@@ -31,6 +31,22 @@
   .ds-btn-outline {
     @apply border-2 border-purple-700 text-purple-700 hover:bg-purple-700 hover:text-white focus:ring-purple-700;
   }
+
+  .ds-tag {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-sm font-medium;
+  }
+
+  .ds-avatar {
+    @apply w-32 h-32 rounded-full object-cover object-center border-4 border-purple-100 shadow-inner;
+  }
+
+  .ds-modal {
+    @apply fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4;
+  }
+
+  .ds-modal-card {
+    @apply w-full max-w-lg;
+  }
   
   /* Custom slider styling */
   .slider::-webkit-slider-thumb {
@@ -41,4 +57,3 @@
     @apply w-5 h-5 bg-purple-700 rounded-full cursor-pointer border-0;
   }
 }
-

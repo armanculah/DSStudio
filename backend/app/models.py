@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import JSON, Column, Enum
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class User(SQLModel, table=True):
@@ -10,9 +10,15 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
+    name: str | None = Field(default=None, max_length=100)
+    surname: str | None = Field(default=None, max_length=100)
     email: str = Field(index=True, unique=True, max_length=255)
+    profile_picture: str | None = Field(default=None, max_length=512)
     hashed_password: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    saved_visualizations: list["SavedVisualization"] = Relationship(
+        back_populates="user"
+    )
 
 
 class SavedVisualization(SQLModel, table=True):
@@ -38,8 +44,12 @@ class SavedVisualization(SQLModel, table=True):
     )
     name: str = Field(max_length=100)
     payload: dict = Field(sa_column=Column(JSON))  # MySQL JSON
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime | None = Field(
+        default_factory=datetime.utcnow,
+        sa_column=Column(default=datetime.utcnow, onupdate=datetime.utcnow),
+    )
+    user: User | None = Relationship(back_populates="saved_visualizations")
 
 
 class AuditLog(SQLModel, table=True):

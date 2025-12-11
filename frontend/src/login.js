@@ -1,7 +1,6 @@
 // frontend/src/login.js
 import "./style.css";
-
-const API_BASE = "http://localhost:8000/api/v1";
+import { API_BASE } from "./config.js";
 
 
 function setMessage(el, text, isError = true) {

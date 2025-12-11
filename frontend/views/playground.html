@@ -17,6 +17,7 @@
           <a href="./login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
           <a href="./signup.html" class="text-gray-600 hover:text-purple-700 transition-colors">Sign up</a>
           <a href="./playground.html" class="text-purple-700 font-medium">Playground</a>
+          <a href="./profile.html" class="text-gray-600 hover:text-purple-700 transition-colors">Profile</a>
         </div>
       </div>
     </div>
@@ -70,6 +71,10 @@
                 Clear
               </button>
             </div>
+
+            <button id="saveStateBtn" class="w-full ds-btn ds-btn-outline">
+              Save current state
+            </button>
             
             <!-- Animation Controls -->
             <div class="space-y-3 pt-4 border-t border-gray-200">
@@ -158,6 +163,31 @@
       </div>
     </div>
   </main>
+
+  <!-- Save Modal -->
+  <div id="saveModal" class="hidden ds-modal" role="dialog" aria-modal="true">
+    <div class="ds-card ds-modal-card space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-gray-900">Save Visualization</h3>
+        <button id="closeSaveModal" class="text-sm text-gray-500 hover:text-gray-700" type="button">
+          Close
+        </button>
+      </div>
+      <form id="saveForm" class="space-y-4">
+        <div>
+          <label for="saveName" class="block text-sm font-medium text-gray-700 mb-1">
+            Name this state
+          </label>
+          <input id="saveName" type="text" class="ds-input" placeholder="e.g. Stack with 5 elements" required>
+        </div>
+        <p id="saveStructureLabel" class="text-sm text-gray-500"></p>
+        <button class="w-full ds-btn ds-btn-primary" type="submit">
+          Save visualization
+        </button>
+        <div id="saveMessage" class="text-sm text-gray-500 min-h-[1.25rem]" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
 
   <script type="module" src="/src/playground.js"></script>
 </body>

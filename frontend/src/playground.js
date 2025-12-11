@@ -4,6 +4,9 @@ import { Stack } from "./algorithms/structures/stack.js";
 import { LinkedList } from "./algorithms/structures/linkedList.js";
 import { createStackVisualizer } from "./visualizers/structures/stackVisualizer.js";
 import { createLinkedListVisualizer } from "./visualizers/structures/linkedListVisualizer.js";
+import { PROFILE_BASE } from "./config.js";
+
+const SAVED_VIS_STORAGE_KEY = "dss-saved-visualization";
 
 console.log("Playground page loaded");
 
@@ -18,6 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const algorithmSelect = document.getElementById("algorithmSelect");
   const statusDiv = document.getElementById("status");
   const svg = document.getElementById("vis");
+  const saveStateBtn = document.getElementById("saveStateBtn");
+  const saveModal = document.getElementById("saveModal");
+  const closeSaveModal = document.getElementById("closeSaveModal");
+  const saveForm = document.getElementById("saveForm");
+  const saveNameInput = document.getElementById("saveName");
+  const saveMessage = document.getElementById("saveMessage");
+  const saveStructureLabel = document.getElementById("saveStructureLabel");
 
   // ---------- STATE ----------
   const stack = new Stack();
@@ -29,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const stackViz = createStackVisualizer(svg);
   const listViz = createLinkedListVisualizer(svg);
+  const saveableStructures = new Set(["stack", "linkedlist"]);
 
   // ---------- STATUS ----------
   const updateStatus = (message, type = "info") => {
@@ -44,6 +55,105 @@ document.addEventListener("DOMContentLoaded", () => {
         ? "text-green-600"
         : "text-gray-600"
     }`;
+  };
+
+  const setSaveMessage = (message, type = "info") => {
+    if (!saveMessage) return;
+    saveMessage.textContent = message || "";
+    saveMessage.className = `text-sm ${
+      !message
+        ? "text-gray-500"
+        : type === "error"
+        ? "text-red-600"
+        : "text-green-600"
+    }`;
+  };
+
+  const toggleSaveModal = (show) => {
+    if (!saveModal) return;
+    saveModal.classList.toggle("hidden", !show);
+    document.body.classList.toggle("overflow-hidden", show);
+    if (!show) {
+      saveForm?.reset();
+      setSaveMessage("");
+    }
+  };
+
+  const getSnapshotForCurrentStructure = () => {
+    if (currentStructure === "stack") {
+      return { values: stack.toArray() };
+    }
+    if (currentStructure === "linkedlist") {
+      return { values: list.toArray() };
+    }
+    return null;
+  };
+
+  const applySnapshotToStructure = (structure, payload) => {
+    if (!payload || !Array.isArray(payload.values)) {
+      return false;
+    }
+
+    if (structure === "stack") {
+      stack.clear();
+      payload.values.forEach((value) => {
+        stack.push(value);
+      });
+      return true;
+    }
+
+    if (structure === "linkedlist") {
+      list.clear();
+      payload.values.forEach((value) => {
+        list.append(value);
+      });
+      return true;
+    }
+
+    return false;
+  };
+
+  const loadVisualizationFromStorage = () => {
+    try {
+      const stored = localStorage.getItem(SAVED_VIS_STORAGE_KEY);
+      if (!stored) return false;
+      localStorage.removeItem(SAVED_VIS_STORAGE_KEY);
+
+      const saved = JSON.parse(stored);
+      if (!saved || !saved.kind || !saved.payload) return false;
+
+      if (!saveableStructures.has(saved.kind)) {
+        updateStatus(
+          `Saved visualization ${saved.name || ""} is not supported in this playground yet.`,
+          "error",
+        );
+        return false;
+      }
+
+      const applied = applySnapshotToStructure(saved.kind, saved.payload);
+      if (!applied) {
+        updateStatus("Could not apply saved visualization payload.", "error");
+        return false;
+      }
+
+      currentStructure = saved.kind;
+      if (algorithmSelect) {
+        algorithmSelect.value = saved.kind;
+      }
+      refreshLabels();
+      render();
+      updateStatus(
+        `Loaded saved ${saved.kind.toUpperCase()} visualization${
+          saved.name ? ` "${saved.name}"` : ""
+        }.`,
+        "success",
+      );
+      return true;
+    } catch (error) {
+      console.error(error);
+      updateStatus("Failed to load saved visualization.", "error");
+      return false;
+    }
   };
 
   // ---------- RENDER DISPATCH ----------
@@ -92,6 +202,64 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStatus(`Animation speed set to ${animationSpeed}%`);
     });
   }
+
+  const handleSaveSubmit = async (event) => {
+    event.preventDefault();
+    if (!saveNameInput) return;
+
+    if (!saveableStructures.has(currentStructure)) {
+      setSaveMessage(
+        `Saving is not supported for ${currentStructure} yet.`,
+        "error",
+      );
+      return;
+    }
+
+    const snapshot = getSnapshotForCurrentStructure();
+    if (!snapshot) {
+      setSaveMessage("Nothing to save for this structure.", "error");
+      return;
+    }
+
+    const name = saveNameInput.value.trim();
+    if (!name) {
+      setSaveMessage("Please provide a name.", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${PROFILE_BASE}/me/saved-visualizations`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          kind: currentStructure,
+          payload: snapshot,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        setSaveMessage("Please log in to save visualizations.", "error");
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.detail || data.error || "Unable to save state.");
+      }
+
+      setSaveMessage("Saved! View it on your profile.", "success");
+      setTimeout(() => {
+        toggleSaveModal(false);
+        updateStatus(`Saved "${name}" to your profile.`, "success");
+      }, 600);
+    } catch (error) {
+      console.error(error);
+      setSaveMessage(error.message, "error");
+    }
+  };
 
   // INSERT
   if (insertBtn && dataInput) {
@@ -212,10 +380,41 @@ document.addEventListener("DOMContentLoaded", () => {
     algorithmSelect.value = "stack";
   }
 
+  // SAVE MODAL EVENTS
+  if (saveStateBtn) {
+    saveStateBtn.addEventListener("click", () => {
+      if (!saveableStructures.has(currentStructure)) {
+        updateStatus(
+          `Saving is not supported for ${currentStructure} yet.`,
+          "error",
+        );
+        return;
+      }
+      if (saveStructureLabel) {
+        saveStructureLabel.textContent = `Current structure: ${currentStructure.toUpperCase()}`;
+      }
+      toggleSaveModal(true);
+      saveNameInput?.focus();
+    });
+  }
+
+  closeSaveModal?.addEventListener("click", () => toggleSaveModal(false));
+
+  saveModal?.addEventListener("click", (event) => {
+    if (event.target === saveModal) {
+      toggleSaveModal(false);
+    }
+  });
+
+  saveForm?.addEventListener("submit", handleSaveSubmit);
+
   // ---------- INIT ----------
   refreshLabels();
-  updateStatus(
-    "Playground ready. Using STACK visualization. Push or insert values to see them appear.",
-  );
-  render();
+  const loadedFromStorage = loadVisualizationFromStorage();
+  if (!loadedFromStorage) {
+    updateStatus(
+      "Playground ready. Using STACK visualization. Push or insert values to see them appear.",
+    );
+    render();
+  }
 });

@@ -1,7 +1,6 @@
 // frontend/src/signup.js
 import "./style.css";
-
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+import { API_BASE } from "./config.js";
 
 function setMessage(el, text, isError = true) {
   if (!el) return;
@@ -13,6 +12,8 @@ function setMessage(el, text, isError = true) {
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("signupForm");
   const msg = document.getElementById("signupMsg");
+  const nameInput = document.getElementById("name");
+  const surnameInput = document.getElementById("surname");
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
 
@@ -22,11 +23,13 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     setMessage(msg, "");
 
+    const name = nameInput?.value.trim();
+    const surname = surnameInput?.value.trim();
     const email = emailInput?.value.trim();
     const password = passwordInput?.value;
 
-    if (!email || !password) {
-      setMessage(msg, "Please enter email and password.");
+    if (!name || !surname || !email || !password) {
+      setMessage(msg, "Please complete all fields.");
       return;
     }
 
@@ -39,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, surname, email, password }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -53,10 +56,30 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      setMessage(msg, "Account created! Redirecting to login…", false);
+      // Automatically log the user in after a successful signup.
+      const loginRes = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!loginRes.ok) {
+        setMessage(
+          msg,
+          "Account created, but automatic login failed. Please log in manually.",
+          true,
+        );
+        setTimeout(() => {
+          window.location.href = "./login.html";
+        }, 1000);
+        return;
+      }
+
+      setMessage(msg, "Account created! Redirecting to your profile…", false);
       setTimeout(() => {
-        window.location.href = "./login.html";
-      }, 800);
+        window.location.href = "./profile.html";
+      }, 600);
     } catch (err) {
       console.error(err);
       setMessage(msg, "Could not reach server. Is the backend running?");
