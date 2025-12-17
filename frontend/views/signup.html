@@ -9,15 +9,34 @@
   <!-- Navigation -->
   <nav class="bg-white border-b border-gray-200">
     <div class="max-w-3xl mx-auto px-6 py-4">
-      <div class="flex justify-between items-center">
-        <h1 class="text-xl font-bold text-purple-700">
-          <a href="../index.html" class="hover:text-purple-800 transition-colors">Data Structures Studio</a>
-        </h1>
-        <div class="flex gap-4">
-          <a href="./login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
-          <a href="./signup.html" class="text-purple-700 font-medium">Sign up</a>
-          <a href="./playground.html" class="text-gray-600 hover:text-purple-700 transition-colors">Playground</a>
-          <a href="./profile.html" class="text-gray-600 hover:text-purple-700 transition-colors">Profile</a>
+      <div class="flex flex-wrap gap-4 justify-between items-center">
+        <div class="flex items-center gap-6">
+          <a href="/index.html" class="text-xl font-bold text-purple-700 hover:text-purple-800 transition-colors">
+            Data Structures Studio
+          </a>
+          <div class="flex gap-4 text-sm sm:text-base text-gray-600">
+            <a href="/views/playground.html" class="hover:text-purple-700 transition-colors">Playground</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3" data-nav-auth="logged-out">
+            <a href="/views/login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
+            <a href="/views/signup.html" class="text-purple-700 font-medium">Sign up</a>
+          </div>
+          <a
+            href="/views/profile.html"
+            class="hidden flex-col items-center gap-1 text-gray-700 hover:text-purple-700 transition-colors"
+            data-nav-auth="logged-in"
+            data-nav-profile-link
+          >
+            <img
+              src="/profile-placeholder.svg"
+              alt="Profile avatar"
+              class="nav-avatar"
+              data-nav-profile-avatar
+            >
+            <span class="text-xs font-medium text-center" data-nav-profile-name>Profile</span>
+          </a>
         </div>
       </div>
     </div>
@@ -112,6 +131,22 @@
     </div>
   </main>
 
+  <footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-5xl mx-auto px-6 py-8 text-center flex flex-col items-center gap-3">
+      <img src="/media/ibu.png" alt="International Burch University logo" class="h-12 object-contain" />
+      <p class="text-sm text-gray-600">
+        This is a Bachelor thesis for the Senior Design Project at International Burch University built by Arman Ćulah with supervision from MSc. Aldin Kovačević, special thanks to my mentor, staff, testers, and supporters.
+      </p>
+      <p class="text-sm text-gray-600">
+        All rights reserved to International Burch University 2025.
+      </p>
+      <a href="https://www.ibu.edu.ba" class="text-sm font-semibold text-purple-700 hover:text-purple-800 underline">
+        www.ibu.edu.ba
+      </a>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
   <script type="module" src="/src/signup.js"></script>
 </body>
 </html>

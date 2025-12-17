@@ -3,6 +3,49 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ds-primary: #15396a;
+  --ds-primary-dark: #0f2645;
+  --ds-primary-muted: #254b7f;
+  --ds-accent: #8f7a4e;
+  --ds-accent-light: #f5efe1;
+  --ds-border: #d1d5db;
+  --ds-muted: #6b7280;
+}
+
+/* Map legacy purple classes to the new palette so older markup stays consistent */
+.text-purple-700,
+.text-purple-800 {
+  color: var(--ds-primary) !important;
+}
+
+.hover\:text-purple-700:hover,
+.hover\:text-purple-800:hover {
+  color: var(--ds-primary-muted) !important;
+}
+
+.bg-purple-700,
+.bg-purple-800 {
+  background-color: var(--ds-primary) !important;
+}
+
+.hover\:bg-purple-700:hover,
+.hover\:bg-purple-800:hover {
+  background-color: var(--ds-primary-dark) !important;
+}
+
+.border-purple-700 {
+  border-color: var(--ds-primary) !important;
+}
+
+.text-accent {
+  color: var(--ds-accent);
+}
+
+.bg-accent {
+  background-color: var(--ds-accent);
+}
+
 /* Custom component styles */
 @layer components {
   /* Reusable card pattern */
@@ -12,32 +55,95 @@
   
   /* Form input styling */
   .ds-input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-700 focus:border-transparent transition-colors;
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg transition-colors;
+    border-color: var(--ds-border);
+  }
+
+  .ds-input:focus {
+    outline: none;
+    border-color: var(--ds-primary);
+    box-shadow: 0 0 0 3px rgba(21, 57, 106, 0.2);
   }
   
   /* Button variants */
   .ds-btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none;
   }
   
   .ds-btn-primary {
-    @apply bg-purple-700 text-white hover:bg-purple-800 focus:ring-purple-700;
+    color: #fff;
+    background-color: var(--ds-primary);
+  }
+  
+  .ds-btn-primary:hover {
+    background-color: var(--ds-accent);
+  }
+
+  .ds-btn-primary:focus-visible {
+    box-shadow: 0 0 0 3px rgba(143, 122, 78, 0.35);
   }
   
   .ds-btn-secondary {
-    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-500;
+    background-color: #fff;
+    color: var(--ds-primary);
+    border: 1px solid var(--ds-border);
+  }
+
+  .ds-btn-secondary:hover {
+    border-color: var(--ds-accent);
+    color: var(--ds-accent);
+    background-color: rgba(143, 122, 78, 0.08);
+  }
+  
+  .ds-btn-secondary:focus-visible {
+    box-shadow: 0 0 0 3px rgba(143, 122, 78, 0.35);
   }
   
   .ds-btn-outline {
-    @apply border-2 border-purple-700 text-purple-700 hover:bg-purple-700 hover:text-white focus:ring-purple-700;
+    border: 2px solid var(--ds-primary);
+    color: var(--ds-primary);
+    background-color: transparent;
+  }
+
+  .ds-btn-outline:hover {
+    background-color: var(--ds-accent);
+    color: #fff;
+    border-color: var(--ds-accent);
+  }
+
+  .ds-btn-outline:focus-visible {
+    box-shadow: 0 0 0 3px rgba(143, 122, 78, 0.35);
   }
 
   .ds-tag {
-    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-sm font-medium;
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium;
+    background-color: var(--ds-accent-light);
+    color: var(--ds-accent);
+  }
+
+  .ds-tag.success {
+    background-color: rgba(21, 57, 106, 0.1);
+    color: var(--ds-primary);
+  }
+
+  .ds-tag.pending {
+    background-color: rgba(143, 122, 78, 0.12);
+    color: var(--ds-accent);
   }
 
   .ds-avatar {
-    @apply w-32 h-32 rounded-full object-cover object-center border-4 border-purple-100 shadow-inner;
+    @apply w-32 h-32 rounded-full object-cover object-center;
+    border: 4px solid #ffffff;
+    box-shadow: 0 8px 24px rgba(21, 57, 106, 0.18);
+    background-color: #f9fafb;
+  }
+
+  .nav-avatar {
+    @apply rounded-full object-cover object-center shadow-sm;
+    width: 42px;
+    height: 42px;
+    border: 2px solid rgba(21, 57, 106, 0.2);
+    background-color: #fff;
   }
 
   .ds-modal {
@@ -50,10 +156,12 @@
   
   /* Custom slider styling */
   .slider::-webkit-slider-thumb {
-    @apply appearance-none w-5 h-5 bg-purple-700 rounded-full cursor-pointer;
+    @apply appearance-none w-5 h-5 rounded-full cursor-pointer;
+    background-color: var(--ds-primary);
   }
   
   .slider::-moz-range-thumb {
-    @apply w-5 h-5 bg-purple-700 rounded-full cursor-pointer border-0;
+    @apply w-5 h-5 rounded-full cursor-pointer border-0;
+    background-color: var(--ds-primary);
   }
 }

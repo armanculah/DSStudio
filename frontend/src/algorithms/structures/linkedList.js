@@ -8,7 +8,7 @@ class LinkedListNode {
 }
 
 // Singly linked list, pure data structure (no DOM)
-export class LinkedList {
+class LinkedList {
   constructor() {
     this.head = null;
     this.tail = null;
@@ -69,4 +69,27 @@ export class LinkedList {
   get isEmpty() {
     return this._length === 0;
   }
+}
+
+export function createLinkedListStructure(initialValues = []) {
+  const list = new LinkedList();
+  if (Array.isArray(initialValues)) {
+    initialValues.forEach((value) => list.append(value));
+  }
+
+  return {
+    insert(value) {
+      list.append(value);
+      return value;
+    },
+    remove() {
+      return list.removeHead();
+    },
+    clear() {
+      list.clear();
+    },
+    toArray() {
+      return list.toArray();
+    },
+  };
 }

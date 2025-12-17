@@ -5,6 +5,7 @@ import { API_ORIGIN, AUTH_BASE, PROFILE_BASE } from "./config.js";
 const PLACEHOLDER_IMAGE = "/profile-placeholder.svg";
 const SAVED_VIS_STORAGE_KEY = "dss-saved-visualization";
 
+const NOT_AVAILABLE = "Not provided yet";
 const profileImage = document.getElementById("profileImage");
 const userFullName = document.getElementById("userFullName");
 const userEmail = document.getElementById("userEmail");
@@ -57,7 +58,7 @@ function toggleModal(modal, show) {
 }
 
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) return NOT_AVAILABLE;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString(undefined, {
@@ -145,10 +146,10 @@ function renderProfile(user) {
   state.user = user;
   const fullName = [user.name, user.surname].filter(Boolean).join(" ").trim() || "Unnamed learner";
   if (userFullName) userFullName.textContent = fullName;
-  if (userEmail) userEmail.textContent = user.email;
-  if (detailName) detailName.textContent = user.name || "—";
-  if (detailSurname) detailSurname.textContent = user.surname || "—";
-  if (detailEmail) detailEmail.textContent = user.email || "—";
+  if (userEmail) userEmail.textContent = user.email || NOT_AVAILABLE;
+  if (detailName) detailName.textContent = user.name || NOT_AVAILABLE;
+  if (detailSurname) detailSurname.textContent = user.surname || NOT_AVAILABLE;
+  if (detailEmail) detailEmail.textContent = user.email || NOT_AVAILABLE;
   if (profileImage) profileImage.src = resolveImageSrc(user.profile_picture_url);
   if (nameInput) nameInput.value = user.name || "";
   if (surnameInput) surnameInput.value = user.surname || "";
@@ -158,6 +159,15 @@ function renderProfile(user) {
 
 async function fetchProfile() {
   try {
+    const authRes = await fetch(`${AUTH_BASE}/me`, { credentials: "include" });
+    if (authRes.status === 401) {
+      window.location.href = "./login.html";
+      return;
+    }
+    if (!authRes.ok) {
+      throw new Error("Failed to verify login status.");
+    }
+
     const res = await fetch(`${PROFILE_BASE}/me`, { credentials: "include" });
     if (res.status === 401) {
       window.location.href = "./login.html";

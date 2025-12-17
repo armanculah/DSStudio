@@ -1,34 +1,31 @@
 // frontend/src/algorithms/structures/stack.js
 
-// Pure stack data structure – no DOM, no SVG
-export class Stack {
-  constructor() {
-    this._items = [];
-  }
+// Factory returning a stack with a consistent playground interface
+export function createStackStructure(initialValues = []) {
+  const items = Array.isArray(initialValues) ? [...initialValues] : [];
 
-  push(value) {
-    this._items.push(value);
-  }
+  const insert = (value) => {
+    items.push(value);
+    return value;
+  };
 
-  pop() {
-    // return null instead of undefined when empty
-    return this._items.length ? this._items.pop() : null;
-  }
+  const remove = () => {
+    if (!items.length) return null;
+    return items.pop();
+  };
 
-  clear() {
-    this._items = [];
-  }
+  const clear = () => {
+    items.length = 0;
+  };
 
-  toArray() {
-    // Return a copy so callers can't mutate internal state accidentally
-    return [...this._items];
-  }
+  const toArray = () => [...items];
 
-  get size() {
-    return this._items.length;
-  }
-
-  get isEmpty() {
-    return this._items.length === 0;
-  }
+  return {
+    insert,
+    remove,
+    clear,
+    toArray,
+    push: insert,
+    pop: remove,
+  };
 }

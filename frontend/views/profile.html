@@ -9,15 +9,34 @@
   <!-- Navigation -->
   <nav class="bg-white border-b border-gray-200">
     <div class="max-w-5xl mx-auto px-6 py-4">
-      <div class="flex justify-between items-center">
-        <h1 class="text-xl font-bold text-purple-700">
-          <a href="../index.html" class="hover:text-purple-800 transition-colors">Data Structures Studio</a>
-        </h1>
-        <div class="flex gap-4">
-          <a href="./login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
-          <a href="./signup.html" class="text-gray-600 hover:text-purple-700 transition-colors">Sign up</a>
-          <a href="./playground.html" class="text-gray-600 hover:text-purple-700 transition-colors">Playground</a>
-          <a href="./profile.html" class="text-purple-700 font-medium">Profile</a>
+      <div class="flex flex-wrap gap-4 justify-between items-center">
+        <div class="flex items-center gap-6">
+          <a href="/index.html" class="text-xl font-bold text-purple-700 hover:text-purple-800 transition-colors">
+            Data Structures Studio
+          </a>
+          <div class="flex gap-4 text-sm sm:text-base text-gray-600">
+            <a href="/views/playground.html" class="hover:text-purple-700 transition-colors">Playground</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3" data-nav-auth="logged-out">
+            <a href="/views/login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
+            <a href="/views/signup.html" class="text-gray-600 hover:text-purple-700 transition-colors">Sign up</a>
+          </div>
+          <a
+            href="/views/profile.html"
+            class="hidden flex-col items-center gap-1 text-gray-700 hover:text-purple-700 transition-colors"
+            data-nav-auth="logged-in"
+            data-nav-profile-link
+          >
+            <img
+              src="/profile-placeholder.svg"
+              alt="Profile avatar"
+              class="nav-avatar"
+              data-nav-profile-avatar
+            >
+            <span class="text-xs font-medium text-center" data-nav-profile-name>Profile</span>
+          </a>
         </div>
       </div>
     </div>
@@ -60,19 +79,19 @@
           </div>
           <div>
             <h3 id="userFullName" class="text-xl font-semibold text-gray-900">Loading…</h3>
-            <p id="userEmail" class="text-gray-600 text-sm">—</p>
+            <p id="userEmail" class="text-gray-600 text-sm">Not provided yet</p>
           </div>
-        <div class="space-y-3 pt-2">
-          <button id="editProfileBtn" class="w-full ds-btn ds-btn-secondary" type="button">
-            Edit profile
-          </button>
-          <button id="settingsBtn" class="w-full ds-btn ds-btn-outline" type="button">
-            Account settings
-          </button>
-          <button id="logoutBtn" class="w-full ds-btn bg-red-500 text-white hover:bg-red-600 focus:ring-red-500" type="button">
-            Logout
-          </button>
-        </div>
+          <div class="space-y-3 pt-2">
+            <button id="editProfileBtn" class="w-full ds-btn ds-btn-secondary" type="button">
+              Edit profile
+            </button>
+            <button id="settingsBtn" class="w-full ds-btn ds-btn-outline" type="button">
+              Account settings
+            </button>
+            <button id="logoutBtn" class="w-full ds-btn bg-red-500 text-white hover:bg-red-600 focus:ring-red-500" type="button">
+              Logout
+            </button>
+          </div>
           <div id="profileMessage" class="text-sm text-gray-500 min-h-[1.5rem]" aria-live="polite"></div>
         </div>
       </div>
@@ -87,15 +106,15 @@
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <dt class="text-sm text-gray-500">Name</dt>
-              <dd id="detailName" class="text-base font-medium text-gray-900">—</dd>
+              <dd id="detailName" class="text-base font-medium text-gray-900">Not provided yet</dd>
             </div>
             <div>
               <dt class="text-sm text-gray-500">Surname</dt>
-              <dd id="detailSurname" class="text-base font-medium text-gray-900">—</dd>
+              <dd id="detailSurname" class="text-base font-medium text-gray-900">Not provided yet</dd>
             </div>
             <div class="sm:col-span-2">
               <dt class="text-sm text-gray-500">Email</dt>
-              <dd id="detailEmail" class="text-base font-medium text-gray-900 break-words">—</dd>
+              <dd id="detailEmail" class="text-base font-medium text-gray-900 break-words">Not provided yet</dd>
             </div>
           </dl>
         </div>
@@ -115,6 +134,21 @@
       </div>
     </section>
   </main>
+
+  <footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-5xl mx-auto px-6 py-8 text-center flex flex-col items-center gap-3">
+      <img src="/media/ibu.png" alt="International Burch University logo" class="h-12 object-contain" />
+      <p class="text-sm text-gray-600">
+        This is a Bachelor thesis for the Senior Design Project at International Burch University built by Arman Ćulah with supervision from MSc. Aldin Kovačević, special thanks to my mentor, staff, testers, and supporters.
+      </p>
+      <p class="text-sm text-gray-600">
+        All rights reserved to International Burch University 2025.
+      </p>
+      <a href="https://www.ibu.edu.ba" class="text-sm font-semibold text-purple-700 hover:text-purple-800 underline">
+        www.ibu.edu.ba
+      </a>
+    </div>
+  </footer>
 
   <!-- Edit Profile Modal -->
   <div id="profileModal" class="hidden ds-modal" role="dialog" aria-modal="true">
@@ -189,6 +223,7 @@
     </div>
   </div>
 
+  <script type="module" src="/src/main.js"></script>
   <script type="module" src="/src/profile.js"></script>
 </body>
 </html>

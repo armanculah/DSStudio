@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setMessage(msg, "Login successful, redirecting…", false);
       setTimeout(() => {
-        window.location.href = "./playground.html";
+        window.location.href = "./profile.html";
       }, 600);
     } catch (err) {
       console.error(err);

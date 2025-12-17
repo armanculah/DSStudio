@@ -8,59 +8,133 @@
   <body class="min-h-screen bg-gray-50 text-gray-900">
     <!-- Navigation -->
     <nav class="bg-white border-b border-gray-200">
-      <div class="max-w-3xl mx-auto px-6 py-4">
-        <div class="flex justify-between items-center">
-          <h1 class="text-xl font-bold text-purple-700">
-            <a href="/" class="hover:text-purple-800 transition-colors">Data Structures Studio</a>
-          </h1>
-          <div class="flex gap-4">
-            <a href="/views/login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
-            <a href="/views/signup.html" class="text-gray-600 hover:text-purple-700 transition-colors">Sign up</a>
-            <a href="/views/playground.html" class="text-gray-600 hover:text-purple-700 transition-colors">Playground</a>
-            <a href="/views/profile.html" class="text-gray-600 hover:text-purple-700 transition-colors">Profile</a>
+      <div class="max-w-5xl mx-auto px-6 py-4">
+        <div class="flex flex-wrap gap-4 justify-between items-center">
+          <div class="flex items-center gap-6">
+            <a href="/" class="text-xl font-bold text-purple-700 hover:text-purple-800 transition-colors">
+              Data Structures Studio
+            </a>
+            <div class="flex gap-4 text-sm sm:text-base text-gray-600">
+              <a href="/views/playground.html" class="hover:text-purple-700 transition-colors">Playground</a>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3" data-nav-auth="logged-out">
+              <a href="/views/login.html" class="text-gray-600 hover:text-purple-700 transition-colors">Login</a>
+              <a href="/views/signup.html" class="text-gray-600 hover:text-purple-700 transition-colors">Sign up</a>
+            </div>
+            <a
+              href="/views/profile.html"
+              class="hidden flex-col items-center gap-1 text-gray-700 hover:text-purple-700 transition-colors"
+              data-nav-auth="logged-in"
+              data-nav-profile-link
+            >
+              <img
+                src="/profile-placeholder.svg"
+                alt="Profile avatar"
+                class="nav-avatar"
+                data-nav-profile-avatar
+              >
+              <span class="text-xs font-medium text-center" data-nav-profile-name>Profile</span>
+            </a>
           </div>
         </div>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-3xl mx-auto p-6">
+    <main class="max-w-5xl mx-auto p-6 space-y-16">
       <!-- Hero Section -->
-      <div class="text-center space-y-6 py-16">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900">
-          Data Structures Studio
-        </h1>
-        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-          Interactive visualizations of classic data structures. Learn through exploration and hands-on experimentation.
-        </p>
-        
-        <!-- Primary Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-          <a href="/views/login.html" class="ds-btn ds-btn-primary px-8 py-3 text-lg">
-            Login
-          </a>
-          <a href="/views/signup.html" class="ds-btn ds-btn-outline px-8 py-3 text-lg">
-            Sign up
-          </a>
-          <a href="/views/playground.html" class="ds-btn ds-btn-secondary px-8 py-3 text-lg">
-            Try Playground
-          </a>
+      <section class="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-[#f4e6c8] via-white to-white px-6 sm:px-10 py-14 text-center space-y-6">
+          <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
+            Visualize every step of classic data structures
+          </h1>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            DSS is an interactive lab for Arrays, Stacks, Queues, Linked Lists, Trees, and Heaps.
+            Watch how each operation reshapes the data and build strong mental models.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            <a href="/views/playground.html" class="ds-btn ds-btn-primary text-lg px-8 py-3">
+              Try the Playground
+            </a>
+            <a href="#structures" class="ds-btn ds-btn-outline text-lg px-8 py-3">
+              What you can learn
+            </a>
+            <a href="/views/signup.html" class="ds-btn ds-btn-secondary text-lg px-8 py-3">
+              Create an account
+            </a>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- About Section -->
-      <div class="ds-card mt-16">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">About Data Structures Studio</h2>
-        <div class="space-y-4 text-gray-600">
-          <p>
-            Explore fundamental data structures through interactive visualizations. Watch how algorithms manipulate data in real-time, helping you build intuition for computer science concepts.
+      <!-- Highlights -->
+      <section class="grid gap-6 md:grid-cols-3">
+        <article class="ds-card space-y-3">
+          <h2 class="text-xl font-semibold text-gray-900">See the steps</h2>
+          <p class="text-gray-600 text-sm">
+            Each push, pop, or traversal is animated so you know exactly what happens internally.
           </p>
-          <p>
-            Features include step-by-step algorithm execution, customizable data sets, and comprehensive explanations to enhance your learning experience.
+        </article>
+        <article class="ds-card space-y-3">
+          <h2 class="text-xl font-semibold text-gray-900">Compare structures</h2>
+          <p class="text-gray-600 text-sm">
+            One interface, multiple structures. Swap between them to understand trade-offs.
+          </p>
+        </article>
+        <article class="ds-card space-y-3">
+          <h2 class="text-xl font-semibold text-gray-900">Learn with context</h2>
+          <p class="text-gray-600 text-sm">
+            We pair visuals with everyday analogies, time complexities, and best-use cases.
+          </p>
+        </article>
+      </section>
+
+      <!-- What you can learn -->
+      <section id="structures" class="space-y-6">
+        <div class="flex flex-col gap-4 text-center">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase">
+            What you can learn
+          </p>
+          <h2 class="text-3xl font-bold text-gray-900">
+            Core structures covered in the studio
+          </h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Follow the progress of each structure. Some already have rich SVG visualizations, and others
+            are in the pipeline with their logic and learning material ready.
           </p>
         </div>
-      </div>
+        <ul id="structureLearnList" class="grid gap-6 md:grid-cols-2">
+          <li class="ds-card text-gray-500">Loading structures...</li>
+        </ul>
+      </section>
+
+      <!-- CTA -->
+      <section class="ds-card text-center space-y-4">
+        <h2 class="text-2xl font-bold text-gray-900">Ready to experiment?</h2>
+        <p class="text-gray-600">
+          Jump into the playground, type in your own values, and watch how each structure behaves.
+        </p>
+        <a href="/views/playground.html" class="inline-flex justify-center ds-btn ds-btn-primary text-lg px-10 py-3">
+          Launch Playground
+        </a>
+      </section>
     </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-12">
+      <div class="max-w-5xl mx-auto px-6 py-8 text-center flex flex-col items-center gap-3">
+        <img src="/media/ibu.png" alt="International Burch University logo" class="h-12 object-contain" />
+        <p class="text-sm text-gray-600">
+          This is a Bachelor thesis for the Senior Design Project at International Burch University built by Arman Ćulah with supervision from MSc. Aldin Kovačević, special thanks to my mentor, staff, testers, and supporters.
+        </p>
+        <p class="text-sm text-gray-600">
+          All rights reserved to International Burch University 2025.
+        </p>
+        <a href="https://www.ibu.edu.ba" class="text-sm font-semibold text-purple-700 hover:text-purple-800 underline">
+          www.ibu.edu.ba
+        </a>
+      </div>
+    </footer>
 
     <script type="module" src="/src/main.js"></script>
   </body>
