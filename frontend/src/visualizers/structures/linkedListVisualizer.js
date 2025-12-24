@@ -78,13 +78,17 @@ export function createLinkedListVisualizer() {
     height: BASE_HEIGHT,
   });
 
-  const render = (svg, values = []) => {
+  const render = (svg, values = [], options = {}) => {
     if (!svg) return;
     const data = Array.isArray(values) ? values : [];
     if (!data.length) {
       drawPlaceholder(svg, "List is empty. Insert values to begin.");
       return;
     }
+
+    const highlight = new Set(options.highlightIndices || []);
+    const foundIndex =
+      typeof options.foundIndex === "number" ? options.foundIndex : null;
 
     const size = getPreferredCanvasSize(data);
     clearSvg(svg);
@@ -106,9 +110,17 @@ export function createLinkedListVisualizer() {
       rect.setAttribute("height", String(NODE_HEIGHT));
       rect.setAttribute("rx", "8");
       rect.setAttribute("ry", "8");
-      rect.setAttribute("fill", index === 0 ? ACCENT_LIGHT : "#ffffff");
+      const isFound = foundIndex === index;
+      rect.setAttribute(
+        "fill",
+        isFound
+          ? "rgba(143, 122, 78, 0.18)"
+          : highlight.has(index) || index === 0
+          ? ACCENT_LIGHT
+          : "#ffffff",
+      );
       rect.setAttribute("stroke", PRIMARY_COLOR);
-      rect.setAttribute("stroke-width", "2");
+      rect.setAttribute("stroke-width", isFound ? "3" : "2");
       svg.appendChild(rect);
 
       const text = document.createElementNS(SVG_NS, "text");

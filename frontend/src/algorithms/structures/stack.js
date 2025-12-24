@@ -14,6 +14,8 @@ export function createStackStructure(initialValues = []) {
     return items.pop();
   };
 
+  const peek = () => (items.length ? items[items.length - 1] : null);
+
   const clear = () => {
     items.length = 0;
   };
@@ -23,9 +25,17 @@ export function createStackStructure(initialValues = []) {
   return {
     insert,
     remove,
+    peek,
     clear,
     toArray,
     push: insert,
     pop: remove,
+    toPayload: () => ({ values: [...items] }),
+    loadFromPayload: (payload) => {
+      items.length = 0;
+      if (!payload || !Array.isArray(payload.values)) return false;
+      payload.values.forEach((v) => items.push(v));
+      return true;
+    },
   };
 }

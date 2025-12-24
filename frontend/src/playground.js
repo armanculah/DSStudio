@@ -1,10 +1,6 @@
 // frontend/src/playground.js
 import "./style.css";
-import { createStackStructure } from "./algorithms/structures/stack.js";
-import { createLinkedListStructure } from "./algorithms/structures/linkedList.js";
-import { createStackVisualizer } from "./visualizers/structures/stackVisualizer.js";
-import { createLinkedListVisualizer } from "./visualizers/structures/linkedListVisualizer.js";
-import { createViewportController } from "./visualizers/viewportController.js";
+
 import { STRUCTURE_INFO } from "./data/structureInfo.js";
 import { parseInputValues } from "./utils/inputParser.js";
 import {
@@ -14,212 +10,201 @@ import {
   deleteSavedVisualization,
 } from "./services/api.js";
 
+import { createArrayStructure } from "./algorithms/structures/array.js";
+import { createStackStructure } from "./algorithms/structures/stack.js";
+import { createQueueStructure } from "./algorithms/structures/queue.js";
+import { createLinkedListStructure } from "./algorithms/structures/linkedList.js";
+import { createBstStructure } from "./algorithms/structures/bst.js";
+import { createHeapStructure } from "./algorithms/structures/heap.js";
+
+import { createArrayVisualizer } from "./visualizers/structures/arrayVisualizer.js";
+import { createStackVisualizer } from "./visualizers/structures/stackVisualizer.js";
+import { createQueueVisualizer } from "./visualizers/structures/queueVisualizer.js";
+import { createLinkedListVisualizer } from "./visualizers/structures/linkedListVisualizer.js";
+import { createBstVisualizer } from "./visualizers/structures/bstVisualizer.js";
+import { createHeapVisualizer } from "./visualizers/structures/heapVisualizer.js";
+
 const SAVED_VIS_STORAGE_KEY = "dss-saved-visualization";
 const numberPattern = /^[+-]?\d+(\.\d+)?$/;
 
-const createPassiveStructure = () => ({
-  insert: () => false,
-  remove: () => null,
-  clear: () => {},
-  toArray: () => [],
-});
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const stackVisualizer = createStackVisualizer();
-const linkedListVisualizer = createLinkedListVisualizer();
+const parseNumericTokens = (rawInput) => {
+  const tokens = parseInputValues(rawInput);
+  if (!tokens.length) {
+    return { values: [], error: "Only numbers are supported. Example: 7 or [7,3,2]." };
+  }
+  const values = [];
+  for (const token of tokens) {
+    const trimmed = String(token).trim();
+    if (!trimmed || !numberPattern.test(trimmed)) {
+      return {
+        values: [],
+        error: `Only numbers are supported. Problematic input: "${trimmed}".`,
+      };
+    }
+    values.push(parseFloat(trimmed));
+  }
+  return { values, error: null };
+};
+
+const parseOptionalIndex = (rawValue) => {
+  if (rawValue === null || rawValue === undefined) return { index: null, error: null };
+  const raw = String(rawValue).trim();
+  if (!raw) return { index: null, error: null };
+  const num = Number(raw);
+  if (!Number.isInteger(num)) {
+    return { index: null, error: "Index must be an integer." };
+  }
+  return { index: num, error: null };
+};
+
+const getDelayFromSpeed = (speedPct) => {
+  const speed = clamp(Number(speedPct) || 50, 10, 100);
+  const minDelay = 160;
+  const maxDelay = 1400;
+  const ratio = (100 - speed) / 90;
+  return Math.round(minDelay + ratio * (maxDelay - minDelay));
+};
+
+const visualizers = {
+  array: createArrayVisualizer(),
+  stack: createStackVisualizer(),
+  queue: createQueueVisualizer(),
+  linkedlist: createLinkedListVisualizer(),
+  bst: createBstVisualizer(),
+  binaryheap: createHeapVisualizer(),
+};
 
 const structureDefinitions = {
   array: {
-    label: STRUCTURE_INFO.array.label,
-    createStructure: createPassiveStructure,
-    visualizer: null,
-    viewport: { horizontal: true, vertical: false },
-    interactive: false,
-    canSave: false,
-    supportsBatch: false,
-    controlLabels: {
-      input: "Insert value(s)",
-      insert: "Insert",
-      remove: "Remove",
+    key: "array",
+    label: "Array",
+    create: () => createArrayStructure(),
+    visualizer: visualizers.array,
+    getRenderData: (structure) => structure.toArray(),
+    serialize: (structure) => ({ values: structure.toArray() }),
+    load: (structure, payload) => {
+      structure.clear();
+      if (!payload || !Array.isArray(payload.values)) return false;
+      for (const v of payload.values) {
+        const res = structure.insert(v);
+        if (res?.error) return false;
+      }
+      return true;
     },
-    placeholder: "Array visualization canvas.",
   },
   stack: {
-    label: STRUCTURE_INFO.stack.label,
-    createStructure: createStackStructure,
-    visualizer: stackVisualizer,
-    viewport: { horizontal: true, vertical: false },
-    interactive: true,
-    canSave: true,
-    supportsBatch: true,
-    controlLabels: {
-      input: "Push value or list",
-      insert: "Push",
-      remove: "Pop",
-    },
-    placeholder: "Stack is empty. Push values to begin.",
+    key: "stack",
+    label: "Stack",
+    create: () => createStackStructure(),
+    visualizer: visualizers.stack,
+    getRenderData: (structure) => structure.toArray(),
+    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray() }),
+    load: (structure, payload) =>
+      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
   },
   queue: {
-    label: STRUCTURE_INFO.queue.label,
-    createStructure: createPassiveStructure,
-    visualizer: null,
-    viewport: { horizontal: true, vertical: false },
-    interactive: false,
-    canSave: false,
-    supportsBatch: false,
-    controlLabels: {
-      input: "Enqueue value or list",
-      insert: "Enqueue",
-      remove: "Dequeue",
+    key: "queue",
+    label: "Queue",
+    create: () => createQueueStructure(),
+    visualizer: visualizers.queue,
+    getRenderData: (structure) => structure.toArray(),
+    serialize: (structure) => ({ values: structure.toArray() }),
+    load: (structure, payload) => {
+      structure.clear();
+      if (!payload || !Array.isArray(payload.values)) return false;
+      payload.values.forEach((v) => structure.enqueue(v));
+      return true;
     },
-    placeholder: "Queue visualization canvas.",
   },
   linkedlist: {
-    label: STRUCTURE_INFO.linkedlist.label,
-    createStructure: createLinkedListStructure,
-    visualizer: linkedListVisualizer,
-    viewport: { horizontal: true, vertical: false },
-    interactive: true,
-    canSave: true,
-    supportsBatch: true,
-    controlLabels: {
-      input: "Insert value or list",
-      insert: "Insert",
-      remove: "Remove head",
-    },
-    placeholder: "List is empty. Insert values to begin.",
+    key: "linkedlist",
+    label: "Linked List",
+    create: () => createLinkedListStructure(),
+    visualizer: visualizers.linkedlist,
+    getRenderData: (structure) => structure.toArray(),
+    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray() }),
+    load: (structure, payload) =>
+      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
   },
   bst: {
-    label: STRUCTURE_INFO.bst.label,
-    createStructure: createPassiveStructure,
-    visualizer: null,
-    viewport: { horizontal: true, vertical: true },
-    interactive: false,
-    canSave: false,
-    supportsBatch: false,
-    controlLabels: {
-      input: "Insert value(s)",
-      insert: "Insert",
-      remove: "Remove",
-    },
-    placeholder: "Binary Search Tree visualization canvas.",
+    key: "bst",
+    label: "Binary Search Tree",
+    create: () => createBstStructure(),
+    visualizer: visualizers.bst,
+    getRenderData: (structure) => structure.getRoot(),
+    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: [] }),
+    load: (structure, payload) =>
+      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
   },
   binaryheap: {
-    label: STRUCTURE_INFO.binaryheap.label,
-    createStructure: createPassiveStructure,
-    visualizer: null,
-    viewport: { horizontal: true, vertical: true },
-    interactive: false,
-    canSave: false,
-    supportsBatch: false,
-    controlLabels: {
-      input: "Insert value(s)",
-      insert: "Insert",
-      remove: "Remove",
-    },
-    placeholder: "Binary Heap visualization canvas.",
+    key: "binaryheap",
+    label: "Binary Heap",
+    create: () => createHeapStructure([], "min"),
+    visualizer: visualizers.binaryheap,
+    getRenderData: (structure) => structure.toArray(),
+    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray(), mode: "min" }),
+    load: (structure, payload) =>
+      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
   },
 };
 
-const drawStaticPlaceholder = (svg, message) => {
-  if (!svg) return;
-  while (svg.firstChild) {
-    svg.removeChild(svg.firstChild);
-  }
-  svg.setAttribute("width", "1000");
-  svg.setAttribute("height", "400");
-  svg.setAttribute("viewBox", "0 0 1000 400");
-
-  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  rect.setAttribute("width", "1000");
-  rect.setAttribute("height", "400");
-  rect.setAttribute("fill", "#f9fafb");
-  rect.setAttribute("stroke", "#e5e7eb");
-  svg.appendChild(rect);
-
-  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  text.setAttribute("x", "500");
-  text.setAttribute("y", "200");
-  text.setAttribute("text-anchor", "middle");
-  text.setAttribute("fill", "#9ca3af");
-  text.setAttribute("font-size", "18");
-  text.setAttribute(
-    "font-family",
-    "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-  );
-  text.textContent = message || "Visualization will appear here.";
-  svg.appendChild(text);
-};
+const getDefinition = (key) => structureDefinitions[key] || structureDefinitions.stack;
 
 document.addEventListener("DOMContentLoaded", () => {
+  const algorithmSelect = document.getElementById("algorithmSelect");
   const dataInput = document.getElementById("dataInput");
+  const indexInput = document.getElementById("indexInput");
+  const indexFieldWrapper = document.getElementById("indexFieldWrapper");
+  const controlsExtra = document.getElementById("controlsExtra");
+
   const insertBtn = document.getElementById("insertBtn");
   const removeBtn = document.getElementById("removeBtn");
   const clearBtn = document.getElementById("clearBtn");
   const autoplayBtn = document.getElementById("autoplayBtn");
   const speedSlider = document.getElementById("speedSlider");
   const speedValue = document.getElementById("speedValue");
-  const statusDiv = document.getElementById("status");
   const saveStateBtn = document.getElementById("saveStateBtn");
-  const saveModal = document.getElementById("saveModal");
-  const saveForm = document.getElementById("saveForm");
-  const saveNameInput = document.getElementById("saveName");
-  const saveMessage = document.getElementById("saveMessage");
-  const saveStructureLabel = document.getElementById("saveStructureLabel");
-  const closeSaveModal = document.getElementById("closeSaveModal");
-  const algorithmSelect = document.getElementById("algorithmSelect");
+
+  const statusDiv = document.getElementById("status");
   const svg = document.getElementById("vis");
   const visContainer = document.getElementById("visScrollContainer");
+
   const infoTitle = document.getElementById("infoTitle");
   const infoDescription = document.getElementById("infoDescription");
   const infoOperations = document.getElementById("infoOperations");
   const infoComplexities = document.getElementById("infoComplexities");
   const infoUseCases = document.getElementById("infoUseCases");
   const infoNotes = document.getElementById("infoNotes");
+
   const savedStatus = document.getElementById("savedVisualizationsStatus");
   const savedList = document.getElementById("savedVisualizationsList");
 
-  const viewportController = createViewportController({
-    container: visContainer,
-  });
+  const saveModal = document.getElementById("saveModal");
+  const saveForm = document.getElementById("saveForm");
+  const saveNameInput = document.getElementById("saveName");
+  const saveMessage = document.getElementById("saveMessage");
+  const saveStructureLabel = document.getElementById("saveStructureLabel");
+  const closeSaveModal = document.getElementById("closeSaveModal");
 
   const structures = new Map();
   let currentStructureKey = "stack";
-  let isAutoPlaying = false;
-  let sequenceQueue = [];
-  let sequenceTimeout = null;
   let loggedInUser = null;
   let savedVisualizations = [];
+
+  // Sequence runner (used for batch inserts and step-by-step highlights)
+  let sequenceSteps = [];
+  let sequenceIndex = 0;
+  let sequenceTimeout = null;
+  let isAutoPlaying = false;
+
+  let renderOptions = {};
 
   const colorClassPattern = /^text-(red|green|gray)-600$/;
   const statusBaseClasses = (statusDiv?.className || "")
     .split(/\s+/)
     .filter((cls) => cls && !colorClassPattern.test(cls));
-
-  const getStructureDefinition = (key) =>
-    structureDefinitions[key] || {
-      label: key.toUpperCase(),
-      createStructure: createPassiveStructure,
-      visualizer: null,
-      viewport: { horizontal: true, vertical: false },
-      interactive: false,
-      canSave: false,
-      supportsBatch: false,
-      controlLabels: {
-        input: "Insert value(s)",
-        insert: "Insert",
-        remove: "Remove",
-      },
-      placeholder: "Visualization will appear here.",
-    };
-
-  const getStructureInstance = (key) => {
-    if (!structures.has(key)) {
-      const definition = getStructureDefinition(key);
-      const factory = definition.createStructure || createPassiveStructure;
-      structures.set(key, factory());
-    }
-    return structures.get(key);
-  };
 
   const updateStatus = (message, type = "info") => {
     if (!statusDiv) return;
@@ -245,18 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }`;
   };
 
-  const sanitizeNumericValues = (rawValues) => {
-    const normalized = [];
-    for (const token of rawValues) {
-      const trimmed = token.trim();
-      if (!numberPattern.test(trimmed)) {
-        return { normalized: [], invalidToken: trimmed };
-      }
-      normalized.push(parseFloat(trimmed));
-    }
-    return { normalized, invalidToken: null };
-  };
-
   const populateList = (element, items, fallbackMessage) => {
     if (!element) return;
     element.innerHTML = "";
@@ -275,119 +248,481 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const updateInfoPanel = () => {
-    const meta = STRUCTURE_INFO[currentStructureKey] || {};
-    if (infoTitle) infoTitle.textContent = meta.label || currentStructureKey.toUpperCase();
-    if (infoDescription) {
-      infoDescription.textContent =
-        meta.description || "A description will appear here.";
+  const getStructureInstance = (key) => {
+    if (!structures.has(key)) {
+      const def = getDefinition(key);
+      structures.set(key, def.create());
     }
-    populateList(infoOperations, meta.operations, "Operations will appear here.");
-    populateList(
-      infoComplexities,
-      meta.complexities,
-      "Complexity analysis is on the way.",
-    );
-    populateList(
-      infoUseCases,
-      meta.useCases,
-      "Use case examples will appear here.",
-    );
-    populateList(infoNotes, meta.notes, "Notes will appear here.");
+    return structures.get(key);
   };
 
   const renderStructure = () => {
     if (!svg) return;
-    const definition = getStructureDefinition(currentStructureKey);
+    const def = getDefinition(currentStructureKey);
     const structure = getStructureInstance(currentStructureKey);
-    const values = structure.toArray();
-    if (definition.visualizer) {
-      definition.visualizer.render(svg, values);
-    } else {
-      drawStaticPlaceholder(svg, definition.placeholder);
+    const data = def.getRenderData(structure);
+    def.visualizer?.render?.(svg, data, renderOptions);
+  };
+
+  const updateInfoPanel = () => {
+    const meta = STRUCTURE_INFO[currentStructureKey] || {};
+    if (infoTitle) infoTitle.textContent = meta.label || getDefinition(currentStructureKey).label;
+    if (infoDescription) {
+      infoDescription.textContent = meta.description || "A description will appear here.";
     }
-    viewportController.setMode(definition.viewport || { horizontal: true, vertical: false });
-    viewportController.update();
+    populateList(infoOperations, meta.operations, "Operations will appear here.");
+    populateList(infoComplexities, meta.complexities, "Complexity analysis will appear here.");
+    populateList(infoUseCases, meta.useCases, "Use case examples will appear here.");
+    populateList(infoNotes, meta.notes, "Notes will appear here.");
   };
 
-  const refreshControlLabels = () => {
-    if (!dataInput || !insertBtn || !removeBtn) return;
-    const definition = getStructureDefinition(currentStructureKey);
-    const { controlLabels } = definition;
-    const inputLabel = document.querySelector("label[for='dataInput']");
-    if (inputLabel) {
-      inputLabel.textContent = controlLabels?.input || "Insert value(s)";
-    }
-    insertBtn.textContent = controlLabels?.insert || "Insert";
-    removeBtn.textContent = controlLabels?.remove || "Remove";
-  };
-
-  const getSequenceDelay = (speed = 50) => {
-    const minDelay = 200;
-    const maxDelay = 1400;
-    const ratio = (100 - speed) / 90;
-    return Math.round(minDelay + ratio * (maxDelay - minDelay));
-  };
-
-  const updateAutoplayBtn = () => {
-    if (!autoplayBtn) return;
-    const label = sequenceQueue.length
-      ? isAutoPlaying
-        ? "Pause auto-play"
-        : "Resume auto-play"
-      : "Auto-play";
-    autoplayBtn.textContent = label;
-    autoplayBtn.className = isAutoPlaying
-      ? "w-full ds-btn ds-btn-primary"
-      : "w-full ds-btn ds-btn-outline";
-  };
-
-  const resetSequence = (clearQueue = true) => {
+  const resetSequence = (keepProgress = false) => {
     if (sequenceTimeout) {
       clearTimeout(sequenceTimeout);
       sequenceTimeout = null;
     }
-    if (clearQueue) {
-      sequenceQueue = [];
-    }
     isAutoPlaying = false;
+    if (!keepProgress) {
+      sequenceSteps = [];
+      sequenceIndex = 0;
+    }
     updateAutoplayBtn();
   };
 
-  const processNextSequenceValue = () => {
+  const updateAutoplayBtn = () => {
+    if (!autoplayBtn) return;
+    if (!sequenceSteps.length || sequenceIndex >= sequenceSteps.length) {
+      autoplayBtn.textContent = "Auto-play";
+      autoplayBtn.className = "w-full ds-btn ds-btn-outline";
+      return;
+    }
+    autoplayBtn.textContent = isAutoPlaying ? "Pause auto-play" : "Resume auto-play";
+    autoplayBtn.className = isAutoPlaying ? "w-full ds-btn ds-btn-primary" : "w-full ds-btn ds-btn-outline";
+  };
+
+  const runSequence = () => {
     if (!isAutoPlaying) return;
-    if (!sequenceQueue.length) {
-      resetSequence(true);
+    if (sequenceIndex >= sequenceSteps.length) {
+      resetSequence(false);
+      renderOptions = {};
+      renderStructure();
       updateStatus("Sequence complete.", "success");
       return;
     }
-    const nextValue = sequenceQueue.shift();
-    handleInsert(nextValue, true);
-    if (sequenceQueue.length) {
-      sequenceTimeout = setTimeout(
-        processNextSequenceValue,
-        getSequenceDelay(Number(speedSlider?.value) || 50),
-      );
-    } else {
-      resetSequence(true);
-      updateStatus("All values inserted.", "success");
+    const delay = getDelayFromSpeed(speedSlider?.value);
+    const step = sequenceSteps[sequenceIndex];
+    sequenceIndex += 1;
+    try {
+      step();
+    } catch (error) {
+      console.error(error);
+      resetSequence(false);
+      updateStatus("Sequence stopped due to an error.", "error");
+      return;
+    }
+    sequenceTimeout = setTimeout(runSequence, delay);
+    updateAutoplayBtn();
+  };
+
+  const startSequence = (steps, { preserveScroll = false } = {}) => {
+    resetSequence(false);
+    sequenceSteps = Array.isArray(steps) ? steps : [];
+    sequenceIndex = 0;
+    isAutoPlaying = true;
+    renderOptions = { ...renderOptions, preserveScroll };
+    updateAutoplayBtn();
+    runSequence();
+  };
+
+  const setControlsExtra = (html) => {
+    if (!controlsExtra) return;
+    controlsExtra.innerHTML = html || "";
+    controlsExtra.classList.toggle("hidden", !html);
+  };
+
+  const setIndexFieldVisible = (visible, labelText = "Index (optional)") => {
+    if (indexFieldWrapper) {
+      indexFieldWrapper.classList.toggle("hidden", !visible);
+      const label = indexFieldWrapper.querySelector("label");
+      if (label) label.textContent = labelText;
+      if (!visible && indexInput) indexInput.value = "";
     }
   };
 
-  const applySnapshotToStructure = (structureKey, payload) => {
-    const definition = getStructureDefinition(structureKey);
-    if (!definition.canSave) {
-      return false;
+  const updateControlLabels = () => {
+    const inputLabel = document.querySelector("label[for='dataInput']");
+    if (!inputLabel || !dataInput || !insertBtn || !removeBtn) return;
+
+    if (currentStructureKey === "stack") {
+      inputLabel.textContent = "Push value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Push";
+      removeBtn.textContent = "Pop";
+      setIndexFieldVisible(false);
+      setControlsExtra(
+        `<div class="grid grid-cols-2 gap-2">
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="peek">Peek</button>
+        </div>`,
+      );
+      return;
     }
-    const structure = getStructureInstance(structureKey);
-    if (!payload || !Array.isArray(payload.values)) {
-      return false;
+
+    if (currentStructureKey === "queue") {
+      inputLabel.textContent = "Enqueue value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Enqueue";
+      removeBtn.textContent = "Dequeue";
+      setIndexFieldVisible(false);
+      setControlsExtra(
+        `<div class="grid grid-cols-2 gap-2">
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="peekFront">Peek front</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="peekRear">Peek rear</button>
+        </div>`,
+      );
+      return;
     }
-    structure.clear();
-    payload.values.forEach((value) => {
-      structure.insert(value);
+
+    if (currentStructureKey === "array") {
+      inputLabel.textContent = "Insert value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Insert";
+      removeBtn.textContent = "Delete";
+      setIndexFieldVisible(true, "Index (optional, default append)");
+      setControlsExtra(
+        `<div class="grid grid-cols-2 gap-2">
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="search">Search</button>
+        </div>`,
+      );
+      return;
+    }
+
+    if (currentStructureKey === "linkedlist") {
+      inputLabel.textContent = "Append value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Append";
+      removeBtn.textContent = "Remove head";
+      setIndexFieldVisible(true, "Index (required for index operations)");
+      setControlsExtra(
+        `<div class="grid grid-cols-2 gap-2">
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="prepend">Prepend</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="insertAt">Insert at index</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="deleteByValue">Delete by value</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="deleteAt">Delete at index</button>
+          <button class="ds-btn ds-btn-secondary col-span-2" type="button" data-action="search">Search</button>
+        </div>`,
+      );
+      return;
+    }
+
+    if (currentStructureKey === "bst") {
+      inputLabel.textContent = "Insert value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Insert";
+      removeBtn.textContent = "Delete";
+      setIndexFieldVisible(false);
+      setControlsExtra(
+        `<div class="grid grid-cols-2 gap-2">
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="search">Search</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="traverse" data-order="in">In-order</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="traverse" data-order="pre">Pre-order</button>
+          <button class="ds-btn ds-btn-secondary" type="button" data-action="traverse" data-order="post">Post-order</button>
+          <button class="ds-btn ds-btn-secondary col-span-2" type="button" data-action="traverse" data-order="level">Level-order</button>
+        </div>`,
+      );
+      return;
+    }
+
+    if (currentStructureKey === "binaryheap") {
+      inputLabel.textContent = "Insert value or list";
+      dataInput.placeholder = "Examples: 7 or [7,3,6]";
+      insertBtn.textContent = "Insert";
+      removeBtn.textContent = "Extract root";
+      setIndexFieldVisible(false);
+      const heap = getStructureInstance("binaryheap");
+      const mode = heap.getMode?.() || "min";
+      setControlsExtra(
+        `<div class="space-y-3">
+          <div>
+            <p class="text-sm font-medium text-gray-700 mb-2">Heap mode</p>
+            <div class="flex gap-4 items-center">
+              <label class="text-sm text-gray-700 flex items-center gap-2">
+                <input type="radio" name="heapMode" value="min" ${mode === "min" ? "checked" : ""} data-action="heapMode">
+                Min-Heap
+              </label>
+              <label class="text-sm text-gray-700 flex items-center gap-2">
+                <input type="radio" name="heapMode" value="max" ${mode === "max" ? "checked" : ""} data-action="heapMode">
+                Max-Heap
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="ds-btn ds-btn-secondary" type="button" data-action="peek">Peek root</button>
+          </div>
+        </div>`,
+      );
+      return;
+    }
+  };
+
+  const applyStructureContext = (emitStatus = true) => {
+    resetSequence(false);
+    renderOptions = {};
+    updateInfoPanel();
+    updateControlLabels();
+    if (visContainer) {
+      visContainer.scrollLeft = 0;
+      visContainer.scrollTop = 0;
+    }
+    renderStructure();
+    if (emitStatus) {
+      updateStatus(`${getDefinition(currentStructureKey).label} ready.`, "success");
+    }
+  };
+
+  const highlightLinearSequence = (visitedIndices, { foundIndex = null } = {}) => {
+    const steps = [];
+    visitedIndices.forEach((idx) => {
+      steps.push(() => {
+        renderOptions = { preserveScroll: true, highlightIndices: [idx] };
+        renderStructure();
+      });
     });
-    return true;
+    steps.push(() => {
+      renderOptions =
+        foundIndex === null || foundIndex < 0
+          ? { preserveScroll: true }
+          : { preserveScroll: true, foundIndex };
+      renderStructure();
+    });
+    startSequence(steps, { preserveScroll: true });
+  };
+
+  const highlightValueSequence = (values, { foundValue = null } = {}) => {
+    const steps = [];
+    values.forEach((val) => {
+      steps.push(() => {
+        renderOptions = { preserveScroll: true, highlightValues: [val] };
+        renderStructure();
+      });
+    });
+    steps.push(() => {
+      renderOptions =
+        foundValue === null
+          ? { preserveScroll: true }
+          : { preserveScroll: true, foundValue };
+      renderStructure();
+    });
+    startSequence(steps, { preserveScroll: true });
+  };
+
+  const insertSingle = (value, { index = null, mode = "default" } = {}) => {
+    const structure = getStructureInstance(currentStructureKey);
+    if (currentStructureKey === "array") {
+      const res = structure.insert(value, index);
+      if (res?.error) {
+        updateStatus(res.error, "error");
+        return false;
+      }
+      renderOptions = { highlightIndices: [res.index] };
+      renderStructure();
+      updateStatus(`Inserted "${value}".`, "success");
+      return true;
+    }
+
+    if (currentStructureKey === "stack") {
+      structure.insert(value);
+      renderOptions = {};
+      renderStructure();
+      updateStatus(`Pushed "${value}".`, "success");
+      return true;
+    }
+
+    if (currentStructureKey === "queue") {
+      structure.enqueue(value);
+      renderOptions = { highlightIndices: [structure.toArray().length - 1] };
+      renderStructure();
+      updateStatus(`Enqueued "${value}".`, "success");
+      return true;
+    }
+
+    if (currentStructureKey === "linkedlist") {
+      if (mode === "prepend") {
+        structure.prepend(value);
+        renderOptions = { highlightIndices: [0] };
+        renderStructure();
+        updateStatus(`Prepended "${value}".`, "success");
+        return true;
+      }
+      if (mode === "insertAt") {
+        const res = structure.insertAt(index, value);
+        if (res?.error) {
+          updateStatus(res.error, "error");
+          return false;
+        }
+        renderOptions = { highlightIndices: [res.index] };
+        renderStructure();
+        updateStatus(`Inserted "${value}" at index ${res.index}.`, "success");
+        return true;
+      }
+      structure.append(value);
+      renderOptions = { highlightIndices: [structure.toArray().length - 1] };
+      renderStructure();
+      updateStatus(`Appended "${value}".`, "success");
+      return true;
+    }
+
+    if (currentStructureKey === "bst") {
+      const res = structure.insert(value);
+      if (!res.inserted) {
+        updateStatus(res.error || "Insert failed.", "error");
+        return false;
+      }
+      renderOptions = { highlightValues: [value] };
+      renderStructure();
+      updateStatus(`Inserted "${value}".`, "success");
+      return true;
+    }
+
+    if (currentStructureKey === "binaryheap") {
+      const heap = structure;
+      heap.insert(value);
+      renderOptions = { highlightIndices: [0] };
+      renderStructure();
+      updateStatus(`Inserted "${value}".`, "success");
+      return true;
+    }
+
+    return false;
+  };
+
+  const removeSingle = () => {
+    const structure = getStructureInstance(currentStructureKey);
+
+    if (currentStructureKey === "stack") {
+      const removed = structure.remove();
+      if (removed === null || removed === undefined) {
+        updateStatus("Stack is empty.", "error");
+        return;
+      }
+      renderOptions = {};
+      renderStructure();
+      updateStatus(`Popped "${removed}".`, "success");
+      return;
+    }
+
+    if (currentStructureKey === "queue") {
+      const removed = structure.dequeue();
+      if (removed === null || removed === undefined) {
+        updateStatus("Queue is empty.", "error");
+        return;
+      }
+      renderOptions = { highlightIndices: [0] };
+      renderStructure();
+      updateStatus(`Dequeued "${removed}".`, "success");
+      return;
+    }
+
+    if (currentStructureKey === "array") {
+      const { index, error } = parseOptionalIndex(indexInput?.value);
+      if (error) {
+        updateStatus(error, "error");
+        return;
+      }
+      const arr = structure.toArray();
+      const idx = index === null ? arr.length - 1 : index;
+      const res = structure.deleteAt(idx);
+      if (res?.error) {
+        updateStatus(res.error, "error");
+        return;
+      }
+      renderOptions = { highlightIndices: [res.index] };
+      renderStructure();
+      updateStatus(`Deleted "${res.removed}" at index ${res.index}.`, "success");
+      return;
+    }
+
+    if (currentStructureKey === "linkedlist") {
+      const removed = structure.remove();
+      if (removed === null || removed === undefined) {
+        updateStatus("List is empty.", "error");
+        return;
+      }
+      renderOptions = { highlightIndices: [0] };
+      renderStructure();
+      updateStatus(`Removed head "${removed}".`, "success");
+      return;
+    }
+
+    if (currentStructureKey === "bst") {
+      const parsed = parseNumericTokens(dataInput?.value || "");
+      if (parsed.error) {
+        updateStatus(parsed.error, "error");
+        return;
+      }
+      const value = parsed.values[0];
+      const res = structure.delete(value);
+      if (!res.deleted) {
+        updateStatus(res.error || "Value not found.", "error");
+        return;
+      }
+      dataInput.value = "";
+      renderOptions = {};
+      renderStructure();
+      updateStatus(`Deleted "${value}".`, "success");
+      return;
+    }
+
+    if (currentStructureKey === "binaryheap") {
+      const res = structure.extract();
+      if (res.value === null || res.value === undefined) {
+        updateStatus("Heap is empty.", "error");
+        return;
+      }
+      renderOptions = { highlightIndices: [0] };
+      renderStructure();
+      updateStatus(`Extracted "${res.value}".`, "success");
+      return;
+    }
+  };
+
+  const clearCurrentStructure = () => {
+    const structure = getStructureInstance(currentStructureKey);
+    structure.clear();
+    renderOptions = {};
+    renderStructure();
+    updateStatus("Structure cleared.", "success");
+  };
+
+  const applyPayloadToStructure = (kind, payload) => {
+    const def = getDefinition(kind);
+    const structure = getStructureInstance(kind);
+    if (!payload) return false;
+
+    const sanitizedPayload = { ...payload };
+    if (Array.isArray(payload.values)) {
+      const cleanValues = [];
+      for (const v of payload.values) {
+        const str = String(v).trim();
+        if (!numberPattern.test(str)) return false;
+        cleanValues.push(parseFloat(str));
+      }
+      sanitizedPayload.values = cleanValues;
+    }
+    if (kind === "bst" && payload.tree) {
+      const sanitizeNode = (node) => {
+        if (!node) return null;
+        const str = String(node.value).trim();
+        if (!numberPattern.test(str)) return null;
+        return {
+          value: parseFloat(str),
+          left: sanitizeNode(node.left),
+          right: sanitizeNode(node.right),
+        };
+      };
+      sanitizedPayload.tree = sanitizeNode(payload.tree);
+      if (sanitizedPayload.tree === null) return false;
+    }
+    return def.load(structure, sanitizedPayload);
   };
 
   const loadVisualizationFromStorage = () => {
@@ -397,16 +732,12 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const saved = JSON.parse(stored);
       if (!saved?.kind || !saved.payload) return false;
-      if (!applySnapshotToStructure(saved.kind, saved.payload)) {
-        return false;
-      }
+      if (!applyPayloadToStructure(saved.kind, saved.payload)) return false;
       currentStructureKey = saved.kind;
       if (algorithmSelect) algorithmSelect.value = currentStructureKey;
       applyStructureContext(false);
       updateStatus(
-        saved.name
-          ? `Loaded saved visualization "${saved.name}".`
-          : "Loaded saved visualization.",
+        saved.name ? `Loaded "${saved.name}".` : "Loaded saved visualization.",
         "success",
       );
       return true;
@@ -437,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     if (!loggedInUser) {
-      savedStatus.textContent = "Log in to keep your sessions saved.";
+      savedStatus.textContent = "Log in to keep your visualizations saved.";
       savedList.innerHTML =
         '<p class="text-sm text-gray-500">Log in to save and load visualizations from here.</p>';
       return;
@@ -506,9 +837,8 @@ document.addEventListener("DOMContentLoaded", () => {
       renderSavedVisualizations();
       return;
     }
-    savedStatus.textContent = "Loading saved visualizations…";
-    savedList.innerHTML =
-      '<p class="text-sm text-gray-500">Loading visualizations…</p>';
+    savedStatus.textContent = "Loading saved visualizations...";
+    savedList.innerHTML = '<p class="text-sm text-gray-500">Loading visualizations...</p>';
     try {
       savedVisualizations = await fetchSavedVisualizations();
       renderSavedVisualizations();
@@ -531,15 +861,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!entry) return;
 
     if (action === "load") {
-      const definition = getStructureDefinition(entry.kind);
-      if (!definition.canSave) {
-        updateStatus(
-          `${definition.label} visualization cannot be loaded yet.`,
-          "info",
-        );
-        return;
-      }
-      const applied = applySnapshotToStructure(entry.kind, entry.payload);
+      const applied = applyPayloadToStructure(entry.kind, entry.payload);
       if (!applied) {
         updateStatus("Could not load the saved visualization.", "error");
         return;
@@ -547,7 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentStructureKey = entry.kind;
       if (algorithmSelect) algorithmSelect.value = entry.kind;
       applyStructureContext(false);
-      updateStatus(`Loaded "${entry.name}" from Saved Visualizations.`, "success");
+      updateStatus(`Loaded "${entry.name}".`, "success");
     }
 
     if (action === "delete") {
@@ -555,112 +877,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!confirmed) return;
       try {
         await deleteSavedVisualization(entry.id);
-        savedVisualizations = savedVisualizations.filter(
-          (item) => item.id !== entry.id,
-        );
+        savedVisualizations = savedVisualizations.filter((item) => item.id !== entry.id);
         renderSavedVisualizations();
         updateStatus(`Deleted "${entry.name}".`, "success");
       } catch (error) {
         updateStatus(error.message, "error");
       }
-    }
-  };
-
-  const handleInsert = (value, fromSequence = false) => {
-    const definition = getStructureDefinition(currentStructureKey);
-    if (!definition.interactive) {
-      updateStatus(
-        `${definition.label} controls are disabled in this build.`,
-        "info",
-      );
-      return false;
-    }
-    const structure = getStructureInstance(currentStructureKey);
-    structure.insert(value);
-    renderStructure();
-    const actionLabel = definition.controlLabels?.insert || "Insert";
-    const suffix = fromSequence ? " from list" : "";
-    updateStatus(`${actionLabel} "${value}"${suffix}.`, "success");
-    return true;
-  };
-
-  const handleRemove = () => {
-    const definition = getStructureDefinition(currentStructureKey);
-    if (!definition.interactive) {
-      updateStatus(
-        `${definition.label} controls are disabled in this build.`,
-        "info",
-      );
-      return;
-    }
-    const structure = getStructureInstance(currentStructureKey);
-    const removed = structure.remove();
-    if (removed === null || removed === undefined) {
-      updateStatus("Structure is already empty.", "error");
-      return;
-    }
-    renderStructure();
-    const label = definition.controlLabels?.remove || "Remove";
-    updateStatus(`${label} "${removed}".`, "success");
-  };
-
-  const applyStructureContext = (emitStatus = true) => {
-    resetSequence(true);
-    refreshControlLabels();
-    updateInfoPanel();
-    renderStructure();
-    if (emitStatus) {
-      const definition = getStructureDefinition(currentStructureKey);
-      updateStatus(`${definition.label} ready.`, "success");
-    }
-  };
-
-  const initAuthState = async () => {
-    try {
-      loggedInUser = await fetchCurrentUser();
-    } catch (error) {
-      console.warn("Unable to fetch current user.", error);
-      loggedInUser = null;
-    }
-    await refreshSavedVisualizations();
-  };
-
-  const handleSaveSubmit = async (event) => {
-    event.preventDefault();
-    if (!loggedInUser) {
-      setSaveMessage("Please log in to save visualizations.", "error");
-      return;
-    }
-    const definition = getStructureDefinition(currentStructureKey);
-    if (!definition.canSave) {
-      setSaveMessage("Saving is not enabled for this structure.", "error");
-      return;
-    }
-    const structure = getStructureInstance(currentStructureKey);
-    const snapshot = structure.toArray();
-    if (!snapshot.length) {
-      setSaveMessage("There is nothing to save for this structure.", "error");
-      return;
-    }
-    const name = saveNameInput?.value.trim();
-    if (!name) {
-      setSaveMessage("Please provide a name.", "error");
-      return;
-    }
-    try {
-      await createSavedVisualization({
-        name,
-        kind: currentStructureKey,
-        payload: { values: snapshot },
-      });
-      setSaveMessage("Saved! View it below or in your profile.", "success");
-      await refreshSavedVisualizations();
-      setTimeout(() => {
-        saveModal?.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
-      }, 600);
-    } catch (error) {
-      setSaveMessage(error.message, "error");
     }
   };
 
@@ -673,60 +895,93 @@ document.addEventListener("DOMContentLoaded", () => {
       setSaveMessage("");
       saveNameInput?.focus();
       if (saveStructureLabel) {
-        saveStructureLabel.textContent = `Current structure: ${currentStructureKey.toUpperCase()}`;
+        const heap = currentStructureKey === "binaryheap" ? getStructureInstance("binaryheap") : null;
+        const modeText = heap ? ` (${heap.getMode?.() || "min"}-heap)` : "";
+        saveStructureLabel.textContent = `Current structure: ${currentStructureKey.toUpperCase()}${modeText}`;
       }
     }
   };
 
-  if (speedSlider && speedValue) {
-    speedSlider.addEventListener("input", (event) => {
-      speedValue.textContent = event.target.value;
-      if (isAutoPlaying) {
-        updateStatus(
-          `Animation speed set to ${event.target.value}%.`,
-          "info",
-        );
-      }
-    });
-  }
+  const handleSaveSubmit = async (event) => {
+    event.preventDefault();
+    if (!loggedInUser) {
+      setSaveMessage("Please log in to save visualizations.", "error");
+      return;
+    }
+    const structure = getStructureInstance(currentStructureKey);
+    const payload = getDefinition(currentStructureKey).serialize(structure);
+    if (!payload || !Array.isArray(payload.values) || !payload.values.length) {
+      setSaveMessage("There is nothing to save for this structure.", "error");
+      return;
+    }
+    const name = saveNameInput?.value.trim();
+    if (!name) {
+      setSaveMessage("Please provide a name.", "error");
+      return;
+    }
+    try {
+      await createSavedVisualization({
+        name,
+        kind: currentStructureKey,
+        payload,
+      });
+      setSaveMessage("Saved! View it below or in your profile.", "success");
+      await refreshSavedVisualizations();
+      setTimeout(() => {
+        toggleSaveModal(false);
+      }, 600);
+    } catch (error) {
+      setSaveMessage(error.message, "error");
+    }
+  };
 
+  // Main button handlers
   insertBtn?.addEventListener("click", () => {
-    if (!dataInput) return;
-    const rawValues = parseInputValues(dataInput.value);
-    if (!rawValues.length) {
-      updateStatus("Please enter at least one numeric value.", "error");
+    const parsed = parseNumericTokens(dataInput?.value || "");
+    if (parsed.error) {
+      updateStatus(parsed.error, "error");
       return;
     }
-    const { normalized, invalidToken } = sanitizeNumericValues(rawValues);
-    if (invalidToken !== null) {
-      updateStatus(
-        `Only numeric values are allowed. Problematic input: "${invalidToken}".`,
-        "error",
-      );
+    const { values } = parsed;
+
+    const { index, error: indexError } = parseOptionalIndex(indexInput?.value);
+    if (indexError) {
+      updateStatus(indexError, "error");
       return;
     }
+
+    if (values.length === 1) {
+      dataInput.value = "";
+      resetSequence(false);
+      insertSingle(values[0], { index });
+      return;
+    }
+
+    // Batch insert sequence
+    const steps = [];
+    if (currentStructureKey === "array") {
+      steps.push(() => {
+        getStructureInstance("array").clear();
+        renderOptions = {};
+        renderStructure();
+        updateStatus("Array reset for batch insert.", "info");
+      });
+    }
+    if (currentStructureKey === "bst") {
+      steps.push(() => updateStatus("Inserting values into the tree...", "info"));
+    }
+
+    values.forEach((v, idx) => {
+      steps.push(() => {
+        const targetIndex = index !== null ? index + idx : null;
+        const ok = insertSingle(v, { index: targetIndex });
+        if (!ok) {
+          resetSequence(false);
+        }
+      });
+    });
     dataInput.value = "";
-    if (normalized.length === 1) {
-      resetSequence(true);
-      handleInsert(normalized[0]);
-    } else {
-      const definition = getStructureDefinition(currentStructureKey);
-      if (!definition.supportsBatch) {
-        updateStatus(
-          `${definition.label} batch insertion is not available yet.`,
-          "info",
-        );
-        return;
-      }
-      sequenceQueue = [...normalized];
-      isAutoPlaying = true;
-      updateAutoplayBtn();
-      updateStatus(
-        `Starting sequence of ${normalized.length} values.`,
-        "success",
-      );
-      processNextSequenceValue();
-    }
+    startSequence(steps, { preserveScroll: false });
   });
 
   dataInput?.addEventListener("keypress", (event) => {
@@ -737,53 +992,54 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   removeBtn?.addEventListener("click", () => {
-    resetSequence(true);
-    handleRemove();
+    resetSequence(false);
+    renderOptions = {};
+    removeSingle();
   });
 
   clearBtn?.addEventListener("click", () => {
-    resetSequence(true);
-    const definition = getStructureDefinition(currentStructureKey);
-    if (!definition.interactive) {
-      updateStatus(
-        `${definition.label} controls are disabled in this build.`,
-        "info",
-      );
-      return;
-    }
-    const structure = getStructureInstance(currentStructureKey);
-    structure.clear();
-    renderStructure();
-    updateStatus("Structure cleared.", "success");
+    resetSequence(false);
+    clearCurrentStructure();
   });
 
   autoplayBtn?.addEventListener("click", () => {
-    if (!sequenceQueue.length) {
-      updateStatus(
-        "No queued list yet. Enter multiple values like [1,2,3] first.",
-        "info",
-      );
+    if (!sequenceSteps.length || sequenceIndex >= sequenceSteps.length) {
+      updateStatus("No sequence is queued yet.", "info");
       return;
     }
     if (isAutoPlaying) {
-      resetSequence(false);
-      updateStatus("Auto-play paused. Resume to continue.", "info");
-    } else {
-      isAutoPlaying = true;
+      isAutoPlaying = false;
+      if (sequenceTimeout) {
+        clearTimeout(sequenceTimeout);
+        sequenceTimeout = null;
+      }
       updateAutoplayBtn();
-      updateStatus("Auto-play resumed.", "success");
-      processNextSequenceValue();
-    }
-  });
-
-  saveStateBtn?.addEventListener("click", () => {
-    const definition = getStructureDefinition(currentStructureKey);
-    if (!definition.canSave) {
-      updateStatus("Saving is not enabled for this structure.", "info");
+      updateStatus("Auto-play paused.", "info");
       return;
     }
+    isAutoPlaying = true;
+    updateAutoplayBtn();
+    updateStatus("Auto-play resumed.", "success");
+    runSequence();
+  });
+
+  if (speedSlider && speedValue) {
+    speedSlider.addEventListener("input", (event) => {
+      speedValue.textContent = event.target.value;
+      if (isAutoPlaying) {
+        updateStatus(`Animation speed set to ${event.target.value}%.`, "info");
+      }
+    });
+  }
+
+  saveStateBtn?.addEventListener("click", () => {
     if (!loggedInUser) {
       updateStatus("Please log in to save visualizations.", "error");
+      return;
+    }
+    const payload = getDefinition(currentStructureKey).serialize(getStructureInstance(currentStructureKey));
+    if (!payload || !Array.isArray(payload.values) || !payload.values.length) {
+      updateStatus("Nothing to save yet.", "error");
       return;
     }
     toggleSaveModal(true);
@@ -797,21 +1053,231 @@ document.addEventListener("DOMContentLoaded", () => {
 
   savedList?.addEventListener("click", handleSavedVisualizationsClick);
 
+  // Extra controls delegation
+  controlsExtra?.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    const action = button.getAttribute("data-action");
+    const structure = getStructureInstance(currentStructureKey);
+
+    if (action === "peek") {
+      if (currentStructureKey === "stack") {
+        const value = structure.peek();
+        if (value === null) {
+          updateStatus("Stack is empty.", "error");
+          return;
+        }
+        renderOptions = {};
+        renderStructure();
+        updateStatus(`Top value is "${value}".`, "success");
+        return;
+      }
+      if (currentStructureKey === "binaryheap") {
+        const value = structure.peek();
+        if (value === null) {
+          updateStatus("Heap is empty.", "error");
+          return;
+        }
+        renderOptions = { highlightIndices: [0] };
+        renderStructure();
+        updateStatus(`Root value is "${value}".`, "success");
+        return;
+      }
+    }
+
+    if (action === "peekFront" && currentStructureKey === "queue") {
+      const value = structure.peekFront();
+      if (value === null) {
+        updateStatus("Queue is empty.", "error");
+        return;
+      }
+      renderOptions = { highlightIndices: [0] };
+      renderStructure();
+      updateStatus(`Front value is "${value}".`, "success");
+      return;
+    }
+
+    if (action === "peekRear" && currentStructureKey === "queue") {
+      const value = structure.peekRear();
+      if (value === null) {
+        updateStatus("Queue is empty.", "error");
+        return;
+      }
+      const idx = Math.max(0, structure.toArray().length - 1);
+      renderOptions = { highlightIndices: [idx] };
+      renderStructure();
+      updateStatus(`Rear value is "${value}".`, "success");
+      return;
+    }
+
+    if (action === "search") {
+      const parsed = parseNumericTokens(dataInput?.value || "");
+      if (parsed.error) {
+        updateStatus(parsed.error, "error");
+        return;
+      }
+      const needle = parsed.values[0];
+
+      if (currentStructureKey === "array") {
+        const res = structure.search(needle);
+        highlightLinearSequence(res.visited, { foundIndex: res.foundIndex });
+        updateStatus(
+          res.foundIndex >= 0 ? `Found "${needle}" at index ${res.foundIndex}.` : `Value "${needle}" not found.`,
+          res.foundIndex >= 0 ? "success" : "info",
+        );
+        return;
+      }
+
+      if (currentStructureKey === "linkedlist") {
+        const res = structure.search(needle);
+        highlightLinearSequence(res.visited, { foundIndex: res.index });
+        updateStatus(
+          res.found ? `Found "${needle}" at index ${res.index}.` : `Value "${needle}" not found.`,
+          res.found ? "success" : "info",
+        );
+        return;
+      }
+
+      if (currentStructureKey === "bst") {
+        const res = structure.search(needle);
+        highlightValueSequence(res.path, { foundValue: res.found ? needle : null });
+        updateStatus(
+          res.found ? `Found "${needle}".` : `Value "${needle}" not found.`,
+          res.found ? "success" : "info",
+        );
+        return;
+      }
+    }
+
+    if (currentStructureKey === "linkedlist") {
+      if (action === "prepend") {
+        const parsed = parseNumericTokens(dataInput?.value || "");
+        if (parsed.error) {
+          updateStatus(parsed.error, "error");
+          return;
+        }
+        const steps = parsed.values.map((v) => () => insertSingle(v, { mode: "prepend" }));
+        dataInput.value = "";
+        startSequence(steps, { preserveScroll: false });
+        return;
+      }
+
+      if (action === "insertAt") {
+        const parsed = parseNumericTokens(dataInput?.value || "");
+        if (parsed.error) {
+          updateStatus(parsed.error, "error");
+          return;
+        }
+        const { index, error: idxError } = parseOptionalIndex(indexInput?.value);
+        if (idxError || index === null) {
+          updateStatus(idxError || "Index is required for insert at index.", "error");
+          return;
+        }
+        const steps = parsed.values.map((v, offset) => () =>
+          insertSingle(v, { index: index + offset, mode: "insertAt" }),
+        );
+        dataInput.value = "";
+        startSequence(steps, { preserveScroll: false });
+        return;
+      }
+
+      if (action === "deleteByValue") {
+        const parsed = parseNumericTokens(dataInput?.value || "");
+        if (parsed.error) {
+          updateStatus(parsed.error, "error");
+          return;
+        }
+        const value = parsed.values[0];
+        const res = structure.deleteByValue(value);
+        if (!res.deleted) {
+          highlightLinearSequence(res.visited, { foundIndex: -1 });
+          updateStatus(res.error || "Value not found.", "error");
+          return;
+        }
+        const steps = res.visited.map((idx) => () => {
+          renderOptions = { highlightIndices: [idx], preserveScroll: true };
+          renderStructure();
+        });
+        steps.push(() => {
+          renderOptions = {};
+          renderStructure();
+          updateStatus(`Deleted "${value}".`, "success");
+        });
+        startSequence(steps, { preserveScroll: true });
+        return;
+      }
+
+      if (action === "deleteAt") {
+        const { index, error } = parseOptionalIndex(indexInput?.value);
+        if (error || index === null) {
+          updateStatus(error || "Index is required for delete at index.", "error");
+          return;
+        }
+        const res = structure.deleteAt(index);
+        if (res?.error) {
+          updateStatus(res.error, "error");
+          return;
+        }
+        renderOptions = { highlightIndices: [res.index] };
+        renderStructure();
+        updateStatus(`Deleted "${res.removed}" at index ${res.index}.`, "success");
+        return;
+      }
+    }
+
+    if (currentStructureKey === "bst" && action === "traverse") {
+      const order = button.getAttribute("data-order") || "in";
+      const traversal = structure.traverse(order);
+      if (!traversal.length) {
+        updateStatus("Tree is empty.", "error");
+        return;
+      }
+      const steps = traversal.map((v) => () => {
+        renderOptions = { highlightValues: [v] };
+        renderStructure();
+      });
+      startSequence(steps, { preserveScroll: true });
+      updateStatus(`Traversal started (${order}).`, "success");
+      return;
+    }
+  });
+
+  controlsExtra?.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!target?.dataset?.action) return;
+    const action = target.dataset.action;
+    if (action === "heapMode" && currentStructureKey === "binaryheap") {
+      const heap = getStructureInstance("binaryheap");
+      heap.setMode(target.value);
+      renderOptions = {};
+      renderStructure();
+      updateStatus(`Heap mode set to ${target.value}.`, "success");
+    }
+  });
+
   algorithmSelect?.addEventListener("change", (event) => {
     currentStructureKey = event.target.value;
     applyStructureContext(true);
   });
 
+  const initAuthState = async () => {
+    try {
+      loggedInUser = await fetchCurrentUser();
+    } catch (error) {
+      console.warn("Unable to fetch current user.", error);
+      loggedInUser = null;
+    }
+    await refreshSavedVisualizations();
+  };
+
+  // Init
   initAuthState();
-  if (algorithmSelect) {
-    algorithmSelect.value = currentStructureKey;
-  }
+  if (algorithmSelect) algorithmSelect.value = currentStructureKey;
   applyStructureContext(false);
   updateAutoplayBtn();
+
   const loadedFromStorage = loadVisualizationFromStorage();
   if (!loadedFromStorage) {
-    updateStatus(
-      "Playground ready. Push values into the stack to begin visualizing.",
-    );
+    updateStatus("Playground ready. Select a structure and start inserting values.", "info");
   }
 });
