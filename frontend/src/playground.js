@@ -67,6 +67,38 @@ const getDelayFromSpeed = (speedPct) => {
   return Math.round(minDelay + ratio * (maxDelay - minDelay));
 };
 
+const normalizePayloadArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    if (Array.isArray(payload.values)) return payload.values;
+    if (Array.isArray(payload.payload)) return payload.payload;
+    if (payload.tree && payload.values && Array.isArray(payload.values)) return payload.values;
+    if (payload.tree && typeof payload.tree === "object") {
+      const collected = [];
+      const walk = (node) => {
+        if (!node) return;
+        collected.push(node.value);
+        walk(node.left);
+        walk(node.right);
+      };
+      walk(payload.tree);
+      if (collected.length) return collected;
+    }
+  }
+  return null;
+};
+
+const getCurrentValuesForSave = (structureKey, structures) => {
+  const def = getDefinition(structureKey);
+  const structure = structures.get(structureKey);
+  if (!def || !structure) return [];
+  const raw = def.serialize(structure);
+  const values = normalizePayloadArray(raw);
+  if (Array.isArray(values)) return values;
+  if (Array.isArray(raw)) return raw;
+  return [];
+};
+
 const visualizers = {
   array: createArrayVisualizer(),
   stack: createStackVisualizer(),
@@ -83,11 +115,12 @@ const structureDefinitions = {
     create: () => createArrayStructure(),
     visualizer: visualizers.array,
     getRenderData: (structure) => structure.toArray(),
-    serialize: (structure) => ({ values: structure.toArray() }),
+    serialize: (structure) => structure.toArray(),
     load: (structure, payload) => {
       structure.clear();
-      if (!payload || !Array.isArray(payload.values)) return false;
-      for (const v of payload.values) {
+      const values = Array.isArray(payload) ? payload : Array.isArray(payload?.values) ? payload.values : null;
+      if (!values) return false;
+      for (const v of values) {
         const res = structure.insert(v);
         if (res?.error) return false;
       }
@@ -100,9 +133,11 @@ const structureDefinitions = {
     create: () => createStackStructure(),
     visualizer: visualizers.stack,
     getRenderData: (structure) => structure.toArray(),
-    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray() }),
+    serialize: (structure) => structure.toArray(),
     load: (structure, payload) =>
-      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
+      structure.loadFromPayload
+        ? structure.loadFromPayload(Array.isArray(payload) ? { values: payload } : payload)
+        : false,
   },
   queue: {
     key: "queue",
@@ -110,11 +145,12 @@ const structureDefinitions = {
     create: () => createQueueStructure(),
     visualizer: visualizers.queue,
     getRenderData: (structure) => structure.toArray(),
-    serialize: (structure) => ({ values: structure.toArray() }),
+    serialize: (structure) => structure.toArray(),
     load: (structure, payload) => {
       structure.clear();
-      if (!payload || !Array.isArray(payload.values)) return false;
-      payload.values.forEach((v) => structure.enqueue(v));
+      const values = Array.isArray(payload) ? payload : Array.isArray(payload?.values) ? payload.values : null;
+      if (!values) return false;
+      values.forEach((v) => structure.enqueue(v));
       return true;
     },
   },
@@ -124,9 +160,11 @@ const structureDefinitions = {
     create: () => createLinkedListStructure(),
     visualizer: visualizers.linkedlist,
     getRenderData: (structure) => structure.toArray(),
-    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray() }),
+    serialize: (structure) => structure.toArray(),
     load: (structure, payload) =>
-      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
+      structure.loadFromPayload
+        ? structure.loadFromPayload(Array.isArray(payload) ? { values: payload } : payload)
+        : false,
   },
   bst: {
     key: "bst",
@@ -134,9 +172,11 @@ const structureDefinitions = {
     create: () => createBstStructure(),
     visualizer: visualizers.bst,
     getRenderData: (structure) => structure.getRoot(),
-    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: [] }),
+    serialize: (structure) => (structure.toPayload ? structure.toPayload().values : []),
     load: (structure, payload) =>
-      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
+      structure.loadFromPayload
+        ? structure.loadFromPayload(Array.isArray(payload) ? { values: payload } : payload)
+        : false,
   },
   binaryheap: {
     key: "binaryheap",
@@ -144,9 +184,17 @@ const structureDefinitions = {
     create: () => createHeapStructure([], "min"),
     visualizer: visualizers.binaryheap,
     getRenderData: (structure) => structure.toArray(),
-    serialize: (structure) => (structure.toPayload ? structure.toPayload() : { values: structure.toArray(), mode: "min" }),
+    serialize: (structure) => structure.toArray(),
     load: (structure, payload) =>
-      structure.loadFromPayload ? structure.loadFromPayload(payload) : false,
+      structure.loadFromPayload
+        ? structure.loadFromPayload(
+            Array.isArray(payload)
+              ? { values: payload }
+              : payload && typeof payload === "object"
+              ? payload
+              : { values: [] },
+          )
+        : false,
   },
 };
 
@@ -698,31 +746,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const structure = getStructureInstance(kind);
     if (!payload) return false;
 
-    const sanitizedPayload = { ...payload };
-    if (Array.isArray(payload.values)) {
-      const cleanValues = [];
-      for (const v of payload.values) {
-        const str = String(v).trim();
-        if (!numberPattern.test(str)) return false;
-        cleanValues.push(parseFloat(str));
-      }
-      sanitizedPayload.values = cleanValues;
+    const values = normalizePayloadArray(payload);
+    if (!values || !Array.isArray(values)) return false;
+    const numeric = [];
+    for (const v of values) {
+      const str = String(v).trim();
+      if (!numberPattern.test(str)) return false;
+      numeric.push(parseFloat(str));
     }
-    if (kind === "bst" && payload.tree) {
-      const sanitizeNode = (node) => {
-        if (!node) return null;
-        const str = String(node.value).trim();
-        if (!numberPattern.test(str)) return null;
-        return {
-          value: parseFloat(str),
-          left: sanitizeNode(node.left),
-          right: sanitizeNode(node.right),
-        };
-      };
-      sanitizedPayload.tree = sanitizeNode(payload.tree);
-      if (sanitizedPayload.tree === null) return false;
+    if (kind === "binaryheap" && payload && typeof payload === "object" && payload.mode) {
+      structure.setMode?.(payload.mode);
     }
-    return def.load(structure, sanitizedPayload);
+    return def.load(structure, { values: numeric, mode: payload?.mode });
   };
 
   const loadVisualizationFromStorage = () => {
@@ -825,7 +860,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const payloadPreview = document.createElement("code");
       payloadPreview.className =
         "text-xs text-gray-600 bg-gray-100 rounded px-3 py-2 block";
-      payloadPreview.textContent = JSON.stringify(viz.payload);
+      const normalizedPayload = normalizePayloadArray(viz.payload) ?? viz.payload;
+      payloadPreview.textContent = JSON.stringify(normalizedPayload);
       card.appendChild(payloadPreview);
       savedList.appendChild(card);
     });
@@ -908,9 +944,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setSaveMessage("Please log in to save visualizations.", "error");
       return;
     }
-    const structure = getStructureInstance(currentStructureKey);
-    const payload = getDefinition(currentStructureKey).serialize(structure);
-    if (!payload || !Array.isArray(payload.values) || !payload.values.length) {
+    const valuesForSave = getCurrentValuesForSave(currentStructureKey, structures);
+    if (!valuesForSave.length) {
       setSaveMessage("There is nothing to save for this structure.", "error");
       return;
     }
@@ -923,7 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await createSavedVisualization({
         name,
         kind: currentStructureKey,
-        payload,
+        payload: valuesForSave,
       });
       setSaveMessage("Saved! View it below or in your profile.", "success");
       await refreshSavedVisualizations();
@@ -1037,8 +1072,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStatus("Please log in to save visualizations.", "error");
       return;
     }
-    const payload = getDefinition(currentStructureKey).serialize(getStructureInstance(currentStructureKey));
-    if (!payload || !Array.isArray(payload.values) || !payload.values.length) {
+    const valuesForSave = getCurrentValuesForSave(currentStructureKey, structures);
+    if (!valuesForSave.length) {
       updateStatus("Nothing to save yet.", "error");
       return;
     }

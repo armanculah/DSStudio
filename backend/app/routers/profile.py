@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import secrets
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session, select
@@ -23,6 +24,7 @@ from ..schemas import (
     UserUpdate,
 )
 from ..utils.user_serializers import serialize_user_with_saved_visualizations
+from ..utils.user_serializers import serialize_saved_visualization
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -41,6 +43,44 @@ def _persist_user(session: Session, user: User) -> None:
     session.add(user)
     session.commit()
     session.refresh(user)
+
+
+def _extract_numeric_array(payload: Any) -> list[float]:
+    # Accept list, wrapper with "values", or legacy tree payloads
+    values: Any = payload
+    if isinstance(payload, dict):
+        if isinstance(payload.get("values"), list):
+            values = payload.get("values")
+        elif isinstance(payload.get("tree"), dict):
+            collected: list[Any] = []
+            stack = [payload.get("tree")]
+            while stack:
+                node = stack.pop()
+                if not isinstance(node, dict) or "value" not in node:
+                    continue
+                collected.append(node.get("value"))
+                if node.get("right") is not None:
+                    stack.append(node.get("right"))
+                if node.get("left") is not None:
+                    stack.append(node.get("left"))
+            if collected:
+                values = collected
+    if not isinstance(values, list):
+        raise HTTPException(
+            status_code=400,
+            detail="Payload must be an array of numbers or an object with a 'values' array.",
+        )
+    normalized: list[float] = []
+    for item in values:
+        try:
+            num = float(item)
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail="Payload values must be numeric.",
+            )
+        normalized.append(num)
+    return normalized
 
 
 @router.get("/me", response_model=UserProfileOut)
@@ -156,7 +196,8 @@ def list_saved_visualizations(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    return _refresh_saved_visualizations(session, current_user.id)
+    visualizations = _refresh_saved_visualizations(session, current_user.id)
+    return [serialize_saved_visualization(v) for v in visualizations]
 
 
 @router.post(
@@ -169,13 +210,17 @@ def create_saved_visualization(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    normalized_values = _extract_numeric_array(payload.payload)
     visualization = SavedVisualization(
-        user_id=current_user.id, **payload.model_dump()
+        user_id=current_user.id,
+        name=payload.name,
+        kind=payload.kind,
+        payload=normalized_values,
     )
     session.add(visualization)
     session.commit()
     session.refresh(visualization)
-    return visualization
+    return serialize_saved_visualization(visualization)
 
 
 @router.get(
@@ -190,7 +235,7 @@ def retrieve_saved_visualization(
     visualization = session.get(SavedVisualization, viz_id)
     if not visualization or visualization.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Saved visualization not found")
-    return visualization
+    return serialize_saved_visualization(visualization)
 
 
 @router.delete("/me/saved-visualizations/{viz_id}", status_code=204)

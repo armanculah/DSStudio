@@ -11,9 +11,25 @@ engine = create_engine(
 
 
 def init_db() -> None:
-    """Ping database at startup; never runs DDL."""
+    """Ping database at startup and ensure required enum values exist."""
     with engine.connect() as conn:
         conn.exec_driver_sql("SELECT 1")
+        try:
+            result = conn.exec_driver_sql(
+                "SELECT column_type FROM information_schema.columns "
+                "WHERE table_schema = %s AND table_name = 'saved_visualizations' AND column_name = 'kind'",
+                (settings.MYSQL_DB,),
+            )
+            row = result.fetchone()
+            column_type = row[0] if row else ""
+            if "binaryheap" not in column_type:
+                conn.exec_driver_sql(
+                    "ALTER TABLE saved_visualizations MODIFY kind "
+                    "ENUM('array','stack','queue','linkedlist','bst','binaryheap','graph','hash') NOT NULL"
+                )
+        except Exception:
+            # Fail silently; not fatal for app startup.
+            pass
 
 
 def get_session():

@@ -1,12 +1,14 @@
 from datetime import datetime
 
+from typing import Any
+
 from pydantic import BaseModel, EmailStr, Field
 
 
 class SavedVisualizationBase(BaseModel):
     name: str = Field(max_length=100)
     kind: str = Field(max_length=32)
-    payload: dict
+    payload: Any
 
 
 class SavedVisualizationCreate(SavedVisualizationBase):

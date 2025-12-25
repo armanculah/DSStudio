@@ -36,6 +36,7 @@ class SavedVisualization(SQLModel, table=True):
                 "queue",
                 "linkedlist",
                 "bst",
+                "binaryheap",
                 "graph",
                 "hash",
                 name="sv_kind",
@@ -43,7 +44,7 @@ class SavedVisualization(SQLModel, table=True):
         )
     )
     name: str = Field(max_length=100)
-    payload: dict = Field(sa_column=Column(JSON))  # MySQL JSON
+    payload: dict | list = Field(sa_column=Column(JSON))  # MySQL JSON
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime | None = Field(
         default_factory=datetime.utcnow,

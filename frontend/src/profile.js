@@ -113,10 +113,29 @@ function renderSavedVisualizations(visualizations) {
     header.appendChild(badge);
     item.appendChild(header);
 
+    const normalizePayload = (payload) => {
+      if (Array.isArray(payload)) return payload;
+      if (payload && typeof payload === "object") {
+        if (Array.isArray(payload.values)) return payload.values;
+        if (payload.tree && typeof payload.tree === "object") {
+          const collected = [];
+          const walk = (node) => {
+            if (!node) return;
+            collected.push(node.value);
+            walk(node.left);
+            walk(node.right);
+          };
+          walk(payload.tree);
+          if (collected.length) return collected;
+        }
+      }
+      return payload;
+    };
+
     const payloadPreview = document.createElement("code");
     payloadPreview.className =
       "text-xs text-gray-600 bg-gray-100 rounded px-2 py-1 overflow-x-auto";
-    payloadPreview.textContent = JSON.stringify(viz.payload);
+    payloadPreview.textContent = JSON.stringify(normalizePayload(viz.payload));
     item.appendChild(payloadPreview);
 
     const actions = document.createElement("div");
@@ -342,6 +361,24 @@ async function deleteSavedVisualization(id) {
 }
 
 function queueVisualizationForPlayground(entry) {
+  const normalizePayload = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (payload && typeof payload === "object") {
+      if (Array.isArray(payload.values)) return payload.values;
+      if (payload.tree && typeof payload.tree === "object") {
+        const collected = [];
+        const walk = (node) => {
+          if (!node) return;
+          collected.push(node.value);
+          walk(node.left);
+          walk(node.right);
+        };
+        walk(payload.tree);
+        if (collected.length) return collected;
+      }
+    }
+    return payload;
+  };
   try {
     localStorage.setItem(
       SAVED_VIS_STORAGE_KEY,
@@ -349,7 +386,7 @@ function queueVisualizationForPlayground(entry) {
         id: entry.id,
         name: entry.name,
         kind: entry.kind,
-        payload: entry.payload,
+        payload: normalizePayload(entry.payload),
       }),
     );
     window.location.href = "./playground.html";

@@ -127,9 +127,10 @@ export function createQueueVisualizer() {
     const rearX = startX + (data.length - 1) * (BOX_W + GAP) + BOX_W / 2;
     const labelY = centerY - BOX_H / 2 - 28;
 
+    const single = data.length === 1;
     const frontLabel = document.createElementNS(SVG_NS, "text");
     frontLabel.setAttribute("x", String(frontX));
-    frontLabel.setAttribute("y", String(labelY));
+    frontLabel.setAttribute("y", String(single ? labelY - 10 : labelY));
     frontLabel.setAttribute("text-anchor", "middle");
     frontLabel.setAttribute("fill", PRIMARY_SOFT);
     frontLabel.setAttribute("font-size", "14");
@@ -142,7 +143,7 @@ export function createQueueVisualizer() {
 
     const rearLabel = document.createElementNS(SVG_NS, "text");
     rearLabel.setAttribute("x", String(rearX));
-    rearLabel.setAttribute("y", String(labelY));
+    rearLabel.setAttribute("y", String(single ? centerY + BOX_H / 2 + 25 : labelY));
     rearLabel.setAttribute("text-anchor", "middle");
     rearLabel.setAttribute("fill", MUTED);
     rearLabel.setAttribute("font-size", "14");
@@ -156,4 +157,3 @@ export function createQueueVisualizer() {
 
   return { render, getPreferredCanvasSize };
 }
-
