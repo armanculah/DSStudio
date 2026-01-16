@@ -19,7 +19,7 @@ This app ships as a single Docker service (frontend built into backend) plus a R
    - `ENV=prod`  
    - `SECRET_KEY=<random strong secret>`  
    - **Database (choose one style):**  
-     - `DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:PORT/DBNAME`  
+     - `DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:PORT/DBNAME` (use **mysql+pymysql** driver)  
        **or**  
      - `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`
    - Optional: `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`

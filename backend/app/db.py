@@ -1,6 +1,10 @@
+import pymysql
 from sqlmodel import Session, create_engine
 
 from .core.config import settings
+
+# Ensure mysqlclient/MySQLdb imports resolve to PyMySQL when used implicitly.
+pymysql.install_as_MySQLdb()
 
 try:
     _DATABASE_URI = settings.SQLALCHEMY_DATABASE_URI
