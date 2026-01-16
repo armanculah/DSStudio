@@ -28,18 +28,10 @@ def init_db() -> None:
     
     with engine.connect() as conn:
         try:
-            result = conn.exec_driver_sql(
-                "SELECT column_type FROM information_schema.columns "
-                "WHERE table_schema = %s AND table_name = 'saved_visualizations' AND column_name = 'kind'",
-                (settings.MYSQL_DB,),
+            conn.exec_driver_sql(
+                "ALTER TABLE saved_visualizations MODIFY kind "
+                "ENUM('array','stack','queue','linkedlist','bst','binaryheap') NOT NULL"
             )
-            row = result.fetchone()
-            column_type = row[0] if row else ""
-            if "binaryheap" not in column_type:
-                conn.exec_driver_sql(
-                    "ALTER TABLE saved_visualizations MODIFY kind "
-                    "ENUM('array','stack','queue','linkedlist','bst','binaryheap','graph','hash') NOT NULL"
-                )
         except Exception:
             # Fail silently; not fatal for app startup.
             pass
