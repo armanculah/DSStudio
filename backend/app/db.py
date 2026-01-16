@@ -2,9 +2,14 @@ from sqlmodel import Session, create_engine
 
 from .core.config import settings
 
+try:
+    _DATABASE_URI = settings.SQLALCHEMY_DATABASE_URI
+except ValueError as exc:  # configuration error
+    raise RuntimeError(str(exc)) from exc
+
 # Connection only; no DDL.
 engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
+    _DATABASE_URI,
     pool_pre_ping=True,
     future=True,
 )

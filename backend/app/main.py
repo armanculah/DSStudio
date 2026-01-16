@@ -15,14 +15,15 @@ app = FastAPI(
     openapi_url=f"/api/{API_VERSION}/openapi.json",
 )
 
-# CORS (frontend at localhost:5173)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
+# CORS only in dev (local Vite)
+if settings.ENV.lower() == "dev":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
 
 @app.on_event("startup")
@@ -72,4 +73,11 @@ app.mount(
     settings.MEDIA_URL,
     StaticFiles(directory=str(settings.MEDIA_ROOT_PATH), check_dir=False),
     name="media",
+)
+
+# Serve built frontend
+app.mount(
+    "/",
+    StaticFiles(directory=str(settings.STATIC_ROOT_PATH), html=True, check_dir=False),
+    name="frontend",
 )
