@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, Enum, TIMESTAMP, text
+from sqlalchemy import JSON, Column, Enum, TIMESTAMP, text, String
 from sqlmodel import Field, Relationship, SQLModel
 
 class User(SQLModel, table=True):
@@ -41,21 +41,21 @@ class SavedVisualization(SQLModel, table=True):
             nullable=False,
         )
     )
-    name: str = Field(max_length=100, sa_column=Column(nullable=False))
+    name: str = Field(sa_column=Column(String(100), nullable=False))
     payload: dict | list = Field(sa_column=Column(JSON, nullable=False))  # MySQL JSON
     created_at: datetime = Field(
         sa_column=Column(
-            TIMESTAMP,
+            TIMESTAMP(fsp=6),
             nullable=False,
-            server_default=text("CURRENT_TIMESTAMP"),
+            server_default=text("CURRENT_TIMESTAMP(6)"),
         )
     )
     updated_at: datetime = Field(
         sa_column=Column(
-            TIMESTAMP,
+            TIMESTAMP(fsp=6),
             nullable=False,
-            server_default=text("CURRENT_TIMESTAMP"),
-            server_onupdate=text("CURRENT_TIMESTAMP"),
+            server_default=text("CURRENT_TIMESTAMP(6)"),
+            server_onupdate=text("CURRENT_TIMESTAMP(6)"),
         )
     )
     user: User | None = Relationship(back_populates="saved_visualizations")
