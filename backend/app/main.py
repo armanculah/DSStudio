@@ -1,13 +1,14 @@
-from pathlib import Path
-
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+import logging
 
 from .core.config import settings
 from .db import init_db
 from .routers import auth, profile
+
+logger = logging.getLogger(__name__)
 
 API_VERSION = "v1"
 
@@ -32,6 +33,14 @@ if settings.ENV.lower() == "dev":
 def on_startup() -> None:
     # Only pings DB; no DDL.
     init_db()
+    static_dir = settings.STATIC_ROOT_PATH
+    index_file = static_dir / "index.html"
+    logger.info(
+        "Static dir: %s exists=%s index_exists=%s",
+        static_dir,
+        static_dir.exists(),
+        index_file.exists(),
+    )
 
 
 # All API endpoints live under /api/v1
@@ -80,35 +89,10 @@ app.mount(
 STATIC_DIR = settings.STATIC_ROOT_PATH
 INDEX_FILE = STATIC_DIR / "index.html"
 
-if STATIC_DIR.exists():
-    assets_dir = STATIC_DIR / "assets"
-    if assets_dir.exists():
-        app.mount(
-            "/assets",
-            StaticFiles(directory=str(assets_dir), check_dir=False),
-            name="assets",
-        )
+if STATIC_DIR.exists() and INDEX_FILE.exists():
+    # Mount Vite build (serves index.html and assets)
     app.mount(
-        "/static",
-        StaticFiles(directory=str(STATIC_DIR), check_dir=False),
-        name="static",
+        "/",
+        StaticFiles(directory=str(STATIC_DIR), html=True, check_dir=False),
+        name="frontend",
     )
-
-
-@app.get("/", include_in_schema=False)
-def serve_index():
-    if INDEX_FILE.exists():
-        return FileResponse(str(INDEX_FILE))
-    raise HTTPException(status_code=404, detail="Index not found")
-
-
-@app.get("/{full_path:path}", include_in_schema=False)
-def spa_fallback(full_path: str):
-    # Do not intercept API or docs routes
-    if full_path.startswith("api/") or full_path.startswith("api"):
-        raise HTTPException(status_code=404)
-    if full_path in {"docs", "redoc", "openapi.json"}:
-        raise HTTPException(status_code=404)
-    if INDEX_FILE.exists():
-        return FileResponse(str(INDEX_FILE))
-    raise HTTPException(status_code=404)

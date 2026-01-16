@@ -64,7 +64,7 @@ class Settings(BaseSettings):
 
     @property
     def STATIC_ROOT_PATH(self) -> Path:
-        return (self.BASE_DIR / self.STATIC_DIR).resolve()
+        return Path(__file__).resolve().parent.parent.parent.joinpath(self.STATIC_DIR).resolve()
 
     @property
     def PROFILE_PICTURE_PATH(self) -> Path:
