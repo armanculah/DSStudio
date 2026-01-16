@@ -702,7 +702,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (currentStructureKey === "bst") {
-      const parsed = parseNumericTokens(dataInput?.value || "");
+      const rawInput = dataInput?.value || "";
+      if (!rawInput.trim()) {
+        updateStatus("Please enter a value to delete.", "error");
+        return;
+      }
+      const parsed = parseNumericTokens(rawInput);
       if (parsed.error) {
         updateStatus(parsed.error, "error");
         return;
@@ -1270,6 +1275,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const steps = traversal.map((v) => () => {
         renderOptions = { highlightValues: [v] };
         renderStructure();
+      });
+      steps.push(() => {
+        renderOptions = { preserveScroll: true };
+        renderStructure();
+        updateStatus(
+          `${order}-order traversal result: [${traversal.join(", ")}].`,
+          "success",
+        );
       });
       startSequence(steps, { preserveScroll: true });
       updateStatus(`Traversal started (${order}).`, "success");
