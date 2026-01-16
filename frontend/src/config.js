@@ -16,7 +16,8 @@ const DEFAULT_PORT =
 
 const resolvedOrigin =
   ENV_API_ORIGIN ||
-  `${DEFAULT_PROTOCOL}//${DEFAULT_HOST}:${DEFAULT_PORT}`.replace(/\/$/, "");
+  (runtimeWindow?.location?.origin ||
+    `${DEFAULT_PROTOCOL}//${DEFAULT_HOST}:${DEFAULT_PORT}`.replace(/\/$/, ""));
 
 export const API_ORIGIN = resolvedOrigin;
 export const API_BASE = `${API_ORIGIN}/api/v1`;
