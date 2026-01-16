@@ -1,6 +1,6 @@
 import pymysql
 from sqlmodel import Session, create_engine
-
+from sqlmodel import SQLModel
 from .core.config import settings
 
 # Ensure mysqlclient/MySQLdb imports resolve to PyMySQL when used implicitly.
@@ -23,6 +23,10 @@ def init_db() -> None:
     """Ping database at startup and ensure required enum values exist."""
     with engine.connect() as conn:
         conn.exec_driver_sql("SELECT 1")
+    
+    SQLModel.metadata.create_all(engine)
+    
+    with engine.connect() as conn:
         try:
             result = conn.exec_driver_sql(
                 "SELECT column_type FROM information_schema.columns "
