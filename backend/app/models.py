@@ -45,17 +45,17 @@ class SavedVisualization(SQLModel, table=True):
     payload: dict | list = Field(sa_column=Column(JSON, nullable=False))  # MySQL JSON
     created_at: datetime = Field(
         sa_column=Column(
-            TIMESTAMP(fsp=6),
+            TIMESTAMP,
             nullable=False,
-            server_default=text("CURRENT_TIMESTAMP(6)"),
+            server_default=text("CURRENT_TIMESTAMP"),
         )
     )
     updated_at: datetime = Field(
         sa_column=Column(
-            TIMESTAMP(fsp=6),
+            TIMESTAMP,
             nullable=False,
-            server_default=text("CURRENT_TIMESTAMP(6)"),
-            server_onupdate=text("CURRENT_TIMESTAMP(6)"),
+            server_default=text("CURRENT_TIMESTAMP"),
+            server_onupdate=text("CURRENT_TIMESTAMP"),
         )
     )
     user: User | None = Relationship(back_populates="saved_visualizations")
