@@ -216,7 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveStateBtn = document.getElementById("saveStateBtn");
 
   const statusDiv = document.getElementById("status");
-  const resultDiv = document.getElementById("resultStatus");
   const svg = document.getElementById("vis");
   const visContainer = document.getElementById("visScrollContainer");
 

@@ -124,8 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
 (async () => {
   try {
     const r = await fetch("/api/v1/health");
-    const j = await r.json();
-    console.log("[api health]", j);
+    await r.json();
   } catch (e) {
     console.warn("API health check failed:", e);
   }
