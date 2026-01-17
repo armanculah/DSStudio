@@ -33,6 +33,8 @@ if settings.ENV.lower() == "dev":
 def on_startup() -> None:
     # Only pings DB; no DDL.
     init_db()
+    settings.MEDIA_ROOT_PATH.mkdir(parents=True, exist_ok=True)
+    settings.PROFILE_PICTURE_PATH.mkdir(parents=True, exist_ok=True)
     static_dir = settings.STATIC_ROOT_PATH
     index_file = static_dir / "index.html"
     logger.info(

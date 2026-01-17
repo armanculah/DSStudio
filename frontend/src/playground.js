@@ -216,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveStateBtn = document.getElementById("saveStateBtn");
 
   const statusDiv = document.getElementById("status");
+  const resultDiv = document.getElementById("resultStatus");
   const svg = document.getElementById("vis");
   const visContainer = document.getElementById("visScrollContainer");
 
@@ -356,10 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderOptions = {};
       renderStructure();
       if (keepStatusMessage) {
-        const existing = statusDiv?.textContent?.trim() || keepStatusMessage;
-        updateStatus(`${existing} (Sequence complete.)`, "success");
-      } else {
-        updateStatus("Sequence complete.", "success");
+        updateStatus(keepStatusMessage, "success");
       }
       return;
     }

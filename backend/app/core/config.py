@@ -60,7 +60,10 @@ class Settings(BaseSettings):
 
     @property
     def MEDIA_ROOT_PATH(self) -> Path:
-        return (self.BASE_DIR / self.MEDIA_ROOT).resolve()
+        media_path = Path(self.MEDIA_ROOT)
+        if media_path.is_absolute():
+            return media_path
+        return (self.BASE_DIR / media_path).resolve()
 
     @property
     def STATIC_ROOT_PATH(self) -> Path:
