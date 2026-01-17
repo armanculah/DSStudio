@@ -3,7 +3,7 @@ import "./style.css";
 import { STRUCTURE_INFO, STRUCTURE_ORDER } from "./data/structureInfo.js";
 import { API_ORIGIN, AUTH_BASE } from "./config.js";
 
-const NAV_AVATAR_PLACEHOLDER = "/profile-placeholder.svg";
+const NAV_AVATAR_PLACEHOLDER = "/profile-placeholder.png";
 const NAV_LOGGED_OUT_SELECTOR = "[data-nav-auth='logged-out']";
 const NAV_LOGGED_IN_SELECTOR = "[data-nav-auth='logged-in']";
 

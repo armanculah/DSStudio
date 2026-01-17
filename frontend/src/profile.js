@@ -2,7 +2,7 @@
 import "./style.css";
 import { API_ORIGIN, AUTH_BASE, PROFILE_BASE } from "./config.js";
 
-const PLACEHOLDER_IMAGE = "/profile-placeholder.svg";
+const PLACEHOLDER_IMAGE = "/profile-placeholder.png";
 const SAVED_VIS_STORAGE_KEY = "dss-saved-visualization";
 
 const NOT_AVAILABLE = "Not provided yet";

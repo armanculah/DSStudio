@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" href="/favicon.png" sizes="64x64">
   <title>Sign Up - Data Structures Studio</title>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
@@ -12,8 +12,8 @@
     <div class="max-w-3xl mx-auto px-6 py-4">
       <div class="flex flex-wrap gap-4 justify-between items-center">
         <div class="flex items-center gap-6">
-          <a href="/index.html" class="text-xl font-bold text-purple-700 hover:text-purple-800 transition-colors">
-            Data Structures Studio
+          <a href="/index.html" class="flex items-center" aria-label="Data Structures Studio home">
+            <img src="/logo.png" alt="Data Structures Studio logo" class="h-12 w-auto sm:h-14 inline-block -mt-1">
           </a>
           <div class="flex gap-4 text-sm sm:text-base text-gray-600">
             <a href="/views/playground.html" class="hover:text-purple-700 transition-colors">Playground</a>
@@ -31,9 +31,9 @@
             data-nav-profile-link
           >
             <img
-              src="/profile-placeholder.svg"
+              src="/profile-placeholder.png"
+              class="nav-avatar mx-auto h-10 w-10 rounded-full object-cover"
               alt="Profile avatar"
-              class="nav-avatar"
               data-nav-profile-avatar
             >
             <span class="text-xs font-medium text-center" data-nav-profile-name>Profile</span>
