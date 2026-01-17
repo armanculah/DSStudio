@@ -14,6 +14,8 @@ API_VERSION = "v1"
 
 app = FastAPI(
     title=settings.APP_NAME,
+    description="API for Data Structures Studio (authentication, profile, and saved visualizations).",
+    version="1.0.0",
     docs_url=f"/api/{API_VERSION}/docs",
     openapi_url=f"/api/{API_VERSION}/openapi.json",
 )

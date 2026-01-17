@@ -83,7 +83,12 @@ def _extract_numeric_array(payload: Any) -> list[float]:
     return normalized
 
 
-@router.get("/me", response_model=UserProfileOut)
+@router.get(
+    "/me",
+    response_model=UserProfileOut,
+    summary="Get current profile with saved visualizations",
+    responses={401: {"description": "Not authenticated"}},
+)
 def read_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -92,7 +97,12 @@ def read_profile(
     return serialize_user_with_saved_visualizations(current_user, visualizations)
 
 
-@router.put("/me", response_model=UserProfileOut)
+@router.put(
+    "/me",
+    response_model=UserProfileOut,
+    summary="Update profile details",
+    responses={401: {"description": "Not authenticated"}, 400: {"description": "Email already in use"}},
+)
 def update_profile(
     payload: UserUpdate,
     current_user: User = Depends(get_current_user),
@@ -116,7 +126,11 @@ def update_profile(
     return serialize_user_with_saved_visualizations(current_user, visualizations)
 
 
-@router.put("/password")
+@router.put(
+    "/password",
+    summary="Update password",
+    responses={401: {"description": "Not authenticated"}, 400: {"description": "Current password incorrect"}},
+)
 def update_password(
     payload: PasswordUpdate,
     current_user: User = Depends(get_current_user),
@@ -144,7 +158,15 @@ def _delete_profile_picture(path_value: str | None) -> None:
         pass
 
 
-@router.put("/profile-picture", response_model=UserProfileOut)
+@router.put(
+    "/profile-picture",
+    response_model=UserProfileOut,
+    summary="Upload or replace profile picture",
+    responses={
+        400: {"description": "Invalid file or too large"},
+        401: {"description": "Not authenticated"},
+    },
+)
 async def upload_profile_picture(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
@@ -175,7 +197,12 @@ async def upload_profile_picture(
     return serialize_user_with_saved_visualizations(current_user, visualizations)
 
 
-@router.delete("/me", status_code=204)
+@router.delete(
+    "/me",
+    status_code=204,
+    summary="Delete account and saved visualizations",
+    responses={401: {"description": "Not authenticated"}},
+)
 def delete_account(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -190,7 +217,10 @@ def delete_account(
 
 
 @router.get(
-    "/me/saved-visualizations", response_model=list[SavedVisualizationOut]
+    "/me/saved-visualizations",
+    response_model=list[SavedVisualizationOut],
+    summary="List saved visualizations",
+    responses={401: {"description": "Not authenticated"}},
 )
 def list_saved_visualizations(
     current_user: User = Depends(get_current_user),
@@ -204,6 +234,11 @@ def list_saved_visualizations(
     "/me/saved-visualizations",
     response_model=SavedVisualizationOut,
     status_code=201,
+    summary="Create a saved visualization",
+    responses={
+        400: {"description": "Payload must be numeric array"},
+        401: {"description": "Not authenticated"},
+    },
 )
 def create_saved_visualization(
     payload: SavedVisualizationCreate,
@@ -226,6 +261,8 @@ def create_saved_visualization(
 @router.get(
     "/me/saved-visualizations/{viz_id}",
     response_model=SavedVisualizationOut,
+    summary="Retrieve a saved visualization by id",
+    responses={401: {"description": "Not authenticated"}, 404: {"description": "Not found"}},
 )
 def retrieve_saved_visualization(
     viz_id: int,
@@ -238,7 +275,12 @@ def retrieve_saved_visualization(
     return serialize_saved_visualization(visualization)
 
 
-@router.delete("/me/saved-visualizations/{viz_id}", status_code=204)
+@router.delete(
+    "/me/saved-visualizations/{viz_id}",
+    status_code=204,
+    summary="Delete a saved visualization by id",
+    responses={401: {"description": "Not authenticated"}, 404: {"description": "Not found"}},
+)
 def delete_saved_visualization(
     viz_id: int,
     current_user: User = Depends(get_current_user),

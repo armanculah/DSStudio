@@ -16,7 +16,13 @@ from ..utils.user_serializers import serialize_user
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UserOut, status_code=201)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=201,
+    summary="Register a new user",
+    responses={400: {"description": "Email already registered"}, 422: {"description": "Validation error"}},
+)
 def register(payload: UserCreate, session: Session = Depends(get_session)):
     exists = session.exec(select(User).where(User.email == payload.email)).first()
     if exists:
@@ -35,7 +41,14 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     return serialize_user(user)
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    summary="Log in with email/password",
+    responses={
+        401: {"description": "Invalid credentials"},
+        422: {"description": "Validation error"},
+    },
+)
 def login(
     payload: UserLogin,
     response: Response,
@@ -58,13 +71,18 @@ def login(
     return {"message": "logged in"}
 
 
-@router.post("/logout")
+@router.post("/logout", summary="Log out by clearing auth cookie")
 def logout(response: Response):
     response.delete_cookie(AUTH_COOKIE_NAME, path="/")
     return {"message": "logged out"}
 
 
-@router.get("/me", response_model=UserOut)
+@router.get(
+    "/me",
+    response_model=UserOut,
+    summary="Return the current authenticated user",
+    responses={401: {"description": "Not authenticated"}},
+)
 def me(request: Request, session: Session = Depends(get_session)):
     token = request.cookies.get(AUTH_COOKIE_NAME)
     data = decode_token(token) if token else None
