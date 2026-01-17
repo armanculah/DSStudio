@@ -33,6 +33,8 @@ if settings.ENV.lower() == "dev":
 
 @app.on_event("startup")
 def on_startup() -> None:
+    if settings.ENV.lower() == "test":
+        return
     # Only pings DB; no DDL.
     init_db()
     settings.MEDIA_ROOT_PATH.mkdir(parents=True, exist_ok=True)
