@@ -352,9 +352,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isAutoPlaying) return;
     if (sequenceIndex >= sequenceSteps.length) {
       resetSequence(false);
+      const keepStatusMessage = renderOptions?.keepStatusMessage || null;
       renderOptions = {};
       renderStructure();
-      updateStatus("Sequence complete.", "success");
+      if (keepStatusMessage) {
+        const existing = statusDiv?.textContent?.trim() || keepStatusMessage;
+        updateStatus(`${existing} (Sequence complete.)`, "success");
+      } else {
+        updateStatus("Sequence complete.", "success");
+      }
       return;
     }
     const delay = getDelayFromSpeed(speedSlider?.value);
@@ -1276,13 +1282,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderOptions = { highlightValues: [v] };
         renderStructure();
       });
+      const finalMessage = `${order}-order traversal result: [${traversal.join(", ")}].`;
+      renderOptions = { ...renderOptions, keepStatusMessage: finalMessage };
       steps.push(() => {
         renderOptions = { preserveScroll: true };
         renderStructure();
-        updateStatus(
-          `${order}-order traversal result: [${traversal.join(", ")}].`,
-          "success",
-        );
+        updateStatus(finalMessage, "success");
       });
       startSequence(steps, { preserveScroll: true });
       updateStatus(`Traversal started (${order}).`, "success");

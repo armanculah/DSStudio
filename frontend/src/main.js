@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // API health probe
 (async () => {
   try {
-    const r = await fetch("http://127.0.0.1:8000/api/v1/health");
+    const r = await fetch("/api/v1/health");
     const j = await r.json();
     console.log("[api health]", j);
   } catch (e) {
