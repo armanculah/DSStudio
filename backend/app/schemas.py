@@ -2,7 +2,7 @@ from datetime import datetime
 
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class SavedVisualizationBase(BaseModel):
@@ -12,7 +12,15 @@ class SavedVisualizationBase(BaseModel):
 
 
 class SavedVisualizationCreate(SavedVisualizationBase):
-    pass
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Stack example",
+                "kind": "stack",
+                "payload": [7, 3, -2, 5],
+            }
+        }
+    )
 
 
 class SavedVisualizationOut(SavedVisualizationBase):

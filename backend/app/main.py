@@ -14,6 +14,8 @@ API_VERSION = "v1"
 
 app = FastAPI(
     title=settings.APP_NAME,
+    description="API for Data Structures Studio (authentication, profile, and saved visualizations).",
+    version="1.0.0",
     docs_url=f"/api/{API_VERSION}/docs",
     openapi_url=f"/api/{API_VERSION}/openapi.json",
 )
@@ -31,6 +33,8 @@ if settings.ENV.lower() == "dev":
 
 @app.on_event("startup")
 def on_startup() -> None:
+    if settings.ENV.lower() == "test":
+        return
     # Only pings DB; no DDL.
     init_db()
     settings.MEDIA_ROOT_PATH.mkdir(parents=True, exist_ok=True)
