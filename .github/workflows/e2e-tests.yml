@@ -1,0 +1,65 @@
+name: E2E Smoke Tests
+
+on:
+  push:
+    branches: ["testing"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t dsstudio .
+
+      - name: Run app container
+        run: |
+          docker run -d --name dsstudio -p 8000:8000 \
+            -e ENV=test \
+            -e SECRET_KEY=testing \
+            -e DATABASE_URL=sqlite:////tmp/test.db \
+            dsstudio
+
+      - name: Wait for app
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8000/api/v1/health > /dev/null; then
+              exit 0
+            fi
+            echo "Attempt $i failed, waiting..."
+            sleep 2
+          done
+          echo "App did not become ready"
+          docker logs dsstudio || true
+          exit 1
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright smoke tests
+        working-directory: frontend
+        env:
+          BASE_URL: http://localhost:8000
+        run: npm run test:e2e
+
+      - name: Docker logs on failure
+        if: failure()
+        run: docker logs dsstudio
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f dsstudio
