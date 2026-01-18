@@ -17,7 +17,7 @@ def test_auth_cookie_flow(client):
     # login
     login = client.post("/api/v1/auth/login", json={"email": email, "password": "password123"})
     assert login.status_code == 200
-    assert any("access_token" in c for c in login.headers.getlist("set-cookie"))
+    assert any("access_token" in c for c in login.headers.get_list("set-cookie"))
 
     # me
     me = client.get("/api/v1/auth/me")
