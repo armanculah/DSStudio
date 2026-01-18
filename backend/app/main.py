@@ -12,12 +12,32 @@ logger = logging.getLogger(__name__)
 
 API_VERSION = "v1"
 
+tags_metadata = [
+    {
+        "name": "health",
+        "description": "Basic readiness checks for the service and database.",
+    },
+    {
+        "name": "auth",
+        "description": "User registration, login (cookie-based JWT), logout, and current-user lookup.",
+    },
+    {
+        "name": "profile",
+        "description": "Profile management, saved visualizations CRUD, and profile picture upload.",
+    },
+]
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="API for Data Structures Studio (authentication, profile, and saved visualizations).",
     version="1.0.0",
     docs_url=f"/api/{API_VERSION}/docs",
     openapi_url=f"/api/{API_VERSION}/openapi.json",
+    openapi_tags=tags_metadata,
+    contact={
+        "name": "Data Structures Studio",
+        "url": "https://github.com/armanculah/DSStudio",
+    },
 )
 
 # CORS only in dev (local Vite)
