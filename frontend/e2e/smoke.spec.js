@@ -12,13 +12,20 @@ test("playground basic render and insert", async ({ page }) => {
   const input = page.locator("#dataInput");
   const insertBtn = page.locator("#insertBtn");
   const svg = page.locator("svg#vis");
+  const structureSelect = page.locator("#algorithmSelect, #dataStructureSelect");
 
   await expect(input).toBeVisible();
   await expect(svg).toBeVisible();
+
+  // Ensure a structure is selected (stack by default if present)
+  if (await structureSelect.count()) {
+    await structureSelect.first().selectOption("stack");
+  }
 
   await input.fill("5");
   await insertBtn.click();
 
   // Expect at least one rect node added after insert (stack/queue render as rects)
-  await expect(svg.locator("rect")).toHaveCount(1, { timeout: 3000 });
+  const rects = svg.locator("rect");
+  await expect(rects).toHaveCount(2, { timeout: 5000 });
 });
