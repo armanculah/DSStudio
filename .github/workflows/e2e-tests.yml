@@ -21,7 +21,7 @@ jobs:
           docker run -d --name dsstudio -p 8000:8000 \
             -e ENV=test \
             -e SECRET_KEY=testing \
-            -e DATABASE_URL=sqlite:///./test.db \
+            -e DATABASE_URL=sqlite:////tmp/test.db \
             dsstudio
 
       - name: Wait for app
@@ -30,9 +30,12 @@ jobs:
             if curl -fsS http://localhost:8000/api/v1/health > /dev/null; then
               exit 0
             fi
+            echo "Attempt $i failed, waiting..."
             sleep 2
           done
-          echo "App did not become ready" && exit 1
+          echo "App did not become ready"
+          docker logs dsstudio || true
+          exit 1
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
